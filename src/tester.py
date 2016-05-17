@@ -16,18 +16,18 @@ import time
 STATUS_FMT = {"FAILED"    : lambda t : red(bold(t)),
               "TIMEOUT"   : lambda t : cyan(t),
               "UNKNOWN"   : lambda t : yellow(t),
-              "CLOSE"     : lambda t : green(bold(t)),
-              "FAR"       : lambda t : green(t),
-              "BAD CLOSE" : lambda t : magenta(t),
-              "BAD FAR"   : lambda t : magenta(bold(t)),}
+              "CLOSE"     : lambda t : green(t),
+              "FAR"       : lambda t : green(bold(t)),
+              "BAD_CLOSE" : lambda t : magenta(t),
+              "BAD_FAR"   : lambda t : magenta(bold(t)),}
 
 STATUS_COUNT = {"FAILED"    : 0,
                 "TIMEOUT"   : 0,
                 "UNKNOWN"   : 0,
                 "CLOSE"     : 0,
                 "FAR"       : 0,
-                "BAD CLOSE" : 0,
-                "BAD FAR"   : 0,}
+                "BAD_CLOSE" : 0,
+                "BAD_FAR"   : 0,}
 
 
 if sys.stdout.isatty():
@@ -69,37 +69,6 @@ def cyan(text):
   return color(6, text)
 
   
-def get_result(output):
-  match = re.search(r'\[([^,]+), \{', output)
-  if match:
-    return float(match.group(1))
-  else:
-    return float('nan')
-
-  
-def get_expected(filename):
-  with open(filename, 'r') as f:
-    match = re.search(r'\#[ \t]*answer:[ \y]*([^ \n]+)', f.read())
-    if match:
-      return float(match.group(1))
-    else:
-      return float('nan')
-
-
-def are_close(expected, result):
-  if abs(expected - result) < 1.2*expected:
-    return True
-
-  return isinf(expected) and isinf(result)
-
-
-def are_rigerous(expected, result):
-  if isinf(expected) and isinf(result):
-    return True
-
-  return expected <= result
-
-
 def compare_result(expected, result, timeoutp):
   if isnan(result):
     if timeoutp:
@@ -112,13 +81,40 @@ def compare_result(expected, result, timeoutp):
   
   res = "CLOSE" if are_close(expected, result) else "FAR"
   if not are_rigerous(expected, result):
-    res = "BAD "+res
+    res = "BAD_"+res
   return res
 
 
+def get_expected(filename):
+  with open(filename, 'r') as f:
+    match = re.search(r'\#[ \t]*answer:[ \y]*([^ \n]+)', f.read())
+    if match:
+      return float(match.group(1))
+    else:
+      return float('nan')
+
+
+def are_close(expected, result):
+  if abs(expected - result) < 1.2*abs(expected):
+    return True
+
+  return isinf(expected) and isinf(result)
+
+
+def are_rigerous(expected, result):
+  if isinf(expected) and isinf(result):
+    return True
+
+  if DREAL:
+    return expected >= result
+  else:
+    return expected <= result
+
+
 def process_test(cmd, test, expected):
+  basename = path.basename(cmd[1])
   cmd = " ".join(cmd)
-  str_result = "{}\n".format(cmd)
+  
 
   t0 = time.time()
   p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -128,13 +124,25 @@ def process_test(cmd, test, expected):
   elapsed = time.time() - t0
 
   # get the test results
-  result = get_result(out+err)
+  result = support.get_result(out+err)
   state = compare_result(expected, result, elapsed>=TIMEOUT)
-  str_result += "State: {}\n".format(STATUS_FMT[state](state))
 
-  str_result += "Answer: {} \n".format('no answer found' if isnan(result) else result)
-  str_result += "Expected: {}\n".format('unknown' if isnan(expected) else expected)
-  str_result += "Time: {}\n\n".format(elapsed)
+  printstate = STATUS_FMT[state](state)
+  expected = 'unknown' if isnan(expected) else expected
+  result = 'no answer found' if isnan(result) else result
+  
+  if CSV:
+    str_result = "{}, {}, {}, {}, {}".format(basename,
+                                             expected,
+                                             result,
+                                             elapsed,
+                                             state)
+  else:
+    str_result = "{}\n".format(cmd)
+    str_result += "State: {}\n".format(printstate)
+    str_result += "Expected: {}\n".format(expected)
+    str_result += "Result: {} \n".format(result)
+    str_result += "Time: {}\n\n".format(elapsed)
 
   return str_result, state
 
@@ -147,12 +155,12 @@ def tally_result(tup):
   print(str_result)
   STATUS_COUNT[state] += 1
 
-
+support = None
 def main():
   """
   Main entry point for the test suite.
   """
-  global TIMEOUT
+  global TIMEOUT, support, CSV, DREAL
   t0 = time.time()
   num_cpus = multiprocessing.cpu_count()//2
 
@@ -163,10 +171,13 @@ def main():
   parser.add_argument("--exe", type=str, help="What executable to run", default="gelpia")
   parser.add_argument("--timeout", type=int, help="How long each executable has, 0 for no timout", default=60)
   parser.add_argument("--dreal", action='store_const', const=True, default=False)
+  parser.add_argument("--csv", action='store_const', const=True, default=False)
   parser.add_argument("benchmark_dir")
   args = parser.parse_args()
 
   TIMEOUT = args.timeout
+  CSV = args.csv
+  DREAL = args.dreal
   
   # change mode
   if args.dreal:
@@ -179,13 +190,21 @@ def main():
   if base == "gelpia":
     exten = ".txt"
     pref = "@"
+    import gelpia_test_support as support
   elif base == "dop_gelpia":
     exten = ".dop"
     pref = ""
+    import gelpia_test_support as support
+  elif base == "dOp_wrapper":
+    exten = ".dop"
+    pref = ""
+    flags = []
+    import dop_test_support as support
   else:
     print(yellow("WARNING") + ": assuming gelpia compatable executable")
     exten = ".txt"
     pref = "@"
+    import gelpia_test_support as support
   
   try:
     # start the tests
@@ -197,10 +216,13 @@ def main():
     total = len(tests)
     print("{} benchmarks to process".format(total))
     
-    n_threads = min(total, args.n_threads)
+    n_threads = min(total+1, args.n_threads)
     print("Creating Pool with '{}' Workers\n".format(n_threads))
     p = multiprocessing.pool.ThreadPool(processes=n_threads)
 
+    if CSV:
+      print("File, Expected, Result, Time, Status")
+      
     for test in tests:
       # build up the subprocess command
       cmd = [exe,
@@ -221,11 +243,11 @@ def main():
       r.wait()
 
   except KeyboardInterrupt:
-    print("Caught KeyboardInterrupt, terminating workers")
+    print("\nCaught KeyboardInterrupt, terminating workers")
     p.terminate() # terminate any remaining workers
     p.join()
   else:
-    print("Quitting normally")
+    print("\nQuitting normally")
     # close the pool. this prevents any more tasks from being submitted.
     p.close()
     p.join() # wait for all workers to finish their tasks
