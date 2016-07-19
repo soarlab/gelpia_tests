@@ -1,0 +1,7 @@
+# answer: 1
+
+var:
+[0, 1] x;
+
+cost:
+sin(-(pi*x)^2)
