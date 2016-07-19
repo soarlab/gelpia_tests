@@ -89,7 +89,10 @@ def get_expected(filename):
   with open(filename, 'r') as f:
     match = re.search(r'\#[ \t]*answer:[ \y]*([^ \n]+)', f.read())
     if match:
-      return float(match.group(1))
+      if match.group(1) == "?":
+        return float('nan')
+      else:
+        return float(match.group(1))
     else:
       return float('nan')
 
@@ -212,7 +215,9 @@ def main():
 
     # start processing the tests.
     results = []
-    tests = sorted(glob.glob(path.join(args.benchmark_dir,"*"+exten)))
+    tests = sorted(glob.glob(path.join(args.benchmark_dir,"**"),
+                             recursive=True))
+    tests = [f for f in tests if f.endswith(exten)]
     total = len(tests)
     print("{} benchmarks to process".format(total))
     
