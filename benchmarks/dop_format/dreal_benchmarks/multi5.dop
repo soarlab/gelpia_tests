@@ -1,4 +1,4 @@
-# answer: 2
+# minimum: 2
 
 var:
 [-3, 3] x;

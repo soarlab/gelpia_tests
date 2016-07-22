@@ -8,6 +8,7 @@ import multiprocessing
 import os.path as path
 import multiprocessing.pool as pool
 import re
+import struct
 import subprocess
 import sys
 import time
@@ -87,22 +88,43 @@ def compare_result(expected, result, timeoutp):
 
 def get_expected(filename):
   with open(filename, 'r') as f:
-    match = re.search(r'\#[ \t]*answer:[ \y]*([^ \n]+)', f.read())
-    if match:
-      if match.group(1) == "?":
-        return float('nan')
-      else:
-        return float(match.group(1))
+    data = f.read()
+    
+  ansmatch = re.search(r'\#[ \t]*answer:[ \y]*([^ \n]+)', data)
+  maxmatch = re.search(r'\#[ \t]*maximum:[ \y]*([^ \n]+)', data)
+  minmatch = re.search(r'\#[ \t]*minimum:[ \y]*([^ \n]+)', data)
+
+  if DREAL:
+    if minmatch:
+      return float(minmatch.group(1) if minmatch.group(1)!="?" else 'nan')
+    else:
+      return float('nan')
+
+  else:
+    if ansmatch:
+      return float(ansmatch.group(1) if ansmatch.group(1)!="?" else 'nan')
+    elif maxmatch:
+      return float(maxmatch.group(1) if maxmatch.group(1)!="?" else 'nan')
     else:
       return float('nan')
 
 
+
+def to_ulps(x):
+  n = struct.unpack('<q', struct.pack('<d', x))[0]
+  return -(n + 2**63) if n < 0 else n
+
+
+def ulps_between(x, y):
+  return abs(to_ulps(x) - to_ulps(y))
+  
+    
 def are_close(expected, result):
-  if abs(expected - result) < 1.2*abs(expected):
-    return True
-
-  return isinf(expected) and isinf(result)
-
+  if isinf(expected) and isinf(result):
+    return (0, True)
+  ulps_diff = ulps_between(expected, result)
+  return ulps_diff < 2**(52-8)
+  
 
 def are_rigerous(expected, result):
   if isinf(expected) and isinf(result):
@@ -131,21 +153,25 @@ def process_test(cmd, test, expected):
   state = compare_result(expected, result, elapsed>=TIMEOUT)
 
   printstate = STATUS_FMT[state](state)
+  ulps = ulps_between(expected, result)
   expected = 'unknown' if isnan(expected) else expected
   result = 'no answer found' if isnan(result) else result
+
   
   if CSV:
-    str_result = "{}, {}, {}, {}, {}".format(basename,
-                                             expected,
-                                             result,
-                                             elapsed,
-                                             state)
+    str_result = "{}, {}, {}, {}, {}, {}".format(basename,
+                                                 expected,
+                                                 result,
+                                                 elapsed,
+                                                 state,
+                                                 ulps)
   else:
     str_result = "{}\n".format(cmd)
-    str_result += "State: {}\n".format(printstate)
+    str_result += "State:    {}\n".format(printstate)
     str_result += "Expected: {}\n".format(expected)
-    str_result += "Result: {} \n".format(result)
-    str_result += "Time: {}\n\n".format(elapsed)
+    str_result += "Result:   {}\n".format(result)
+    str_result += "ULPs:     {}\n".format(int(ulps))
+    str_result += "Time:     {}\n\n".format(elapsed)
 
   return str_result, state
 
@@ -155,7 +181,7 @@ def tally_result(tup):
   Tallies the result of each worker. This will only be called by the main thread.
   """
   str_result, state = tup
-  print(str_result)
+  print(str_result, flush=True)
   STATUS_COUNT[state] += 1
 
 support = None
@@ -169,6 +195,7 @@ def main():
 
   # configure the CLI
   parser = argparse.ArgumentParser()
+  parser.add_argument("--flags", nargs="+", help="Additional command line arguments for the tool under test", default=[])
   parser.add_argument("--threads", action="store", dest="n_threads", default=num_cpus, type=int,
                       help="execute regressions using the selected number of threads in parallel")
   parser.add_argument("--exe", type=str, help="What executable to run", default="gelpia")
@@ -181,12 +208,13 @@ def main():
   TIMEOUT = args.timeout
   CSV = args.csv
   DREAL = args.dreal
+  flags = args.flags
   
   # change mode
   if args.dreal:
-    flags = ["--dreal"]
+    flags += ["--dreal"]
   else:
-    flags = []
+    flags += []
 
   exe = args.exe
   base = path.basename(args.exe)
@@ -222,11 +250,11 @@ def main():
     print("{} benchmarks to process".format(total))
     
     n_threads = min(total+1, args.n_threads)
-    print("Creating Pool with '{}' Workers\n".format(n_threads))
+    print("Creating Pool with '{}' Workers\n".format(n_threads), flush=True)
     p = multiprocessing.pool.ThreadPool(processes=n_threads)
 
     if CSV:
-      print("File, Expected, Result, Time, Status")
+      print("File, Expected, Result, Time, Status, approximate ULPs between")
       
     for test in tests:
       # build up the subprocess command

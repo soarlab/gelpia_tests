@@ -11,8 +11,8 @@ def get_result(output):
     return float('nan')
 
   if type(lst[0]) is list:
-    return lst[0][1]
+    return float(lst[0][1])
   else:
-    return lst[0]
+    return float(lst[0])
 
   

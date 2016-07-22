@@ -1,4 +1,4 @@
-# answer: 25
+# minimum: 25
 
 var:
 [-5, 10] x;

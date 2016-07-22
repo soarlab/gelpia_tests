@@ -1,4 +1,4 @@
-# answer: ?
+# answer: -0.500092 found via wolfram alpha and rounded down
 
 var:
 [-100, 100] x1;
