@@ -1,4 +1,5 @@
-# answer: 1.9133 at (-0.54719, -1.54719)
+# maximum: 1.91322 at (-0.547198, -1.5472) found via wolfram mathematica
+# minimum: -44.0985 at (-1.5, 4) found via wolfram mathematica
 
 var:
 [-1.5, 4] x1;

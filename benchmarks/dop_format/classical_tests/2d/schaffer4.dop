@@ -1,4 +1,5 @@
-# answer: -0.500092 found via wolfram alpha and rounded down
+# maximum: -0.500092 found via wolfram mathematica and rounded down
+# minimum: -0.832545 found via wolfram mathematica and rounded up
 
 var:
 [-100, 100] x1;

@@ -1,4 +1,5 @@
-# answer: 1 at (pi, pi)
+# maximum: 1 at (pi, pi) found via wolfram mathematica
+# minimum: 0 at (-100, -100) found via wolfram mathematica
 
 var:
 [-100, 100] x1;
