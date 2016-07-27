@@ -116,12 +116,16 @@ def to_ulps(x):
 
 
 def ulps_between(x, y):
+  if isnan(x) or isnan(y):
+    return float('nan')
   return abs(to_ulps(x) - to_ulps(y))
   
     
 def are_close(expected, result):
   if isinf(expected) and isinf(result):
-    return (0, True)
+    return True
+  if expected == 0.0:
+    return result < 0.0001
   ulps_diff = ulps_between(expected, result)
   return ulps_diff < 2**(52-8)
   
@@ -159,19 +163,22 @@ def process_test(cmd, test, expected):
 
   
   if CSV:
-    str_result = "{}, {}, {}, {}, {}, {}".format(basename,
+    str_result = "{}, {}, {}, {}, {}, {}, {}".format(basename,
+                                                 state,
                                                  expected,
                                                  result,
-                                                 elapsed,
-                                                 state,
-                                                 ulps)
+                                                 result-expected,
+                                                 ulps,
+                                                 elapsed)
+    
   else:
     str_result = "{}\n".format(cmd)
-    str_result += "State:    {}\n".format(printstate)
-    str_result += "Expected: {}\n".format(expected)
-    str_result += "Result:   {}\n".format(result)
-    str_result += "ULPs:     {}\n".format(int(ulps))
-    str_result += "Time:     {}\n\n".format(elapsed)
+    str_result += "State:     {}\n".format(printstate)
+    str_result += "Expected:  {}\n".format(expected)
+    str_result += "Result:    {}\n".format(result)
+    str_result += "Abs Diff:  {} \n".format(result-expected)
+    str_result += "ULPs Diff: {}\n".format(int(ulps))
+    str_result += "Time:      {}\n\n".format(elapsed)
 
   return str_result, state
 
@@ -254,7 +261,7 @@ def main():
     p = multiprocessing.pool.ThreadPool(processes=n_threads)
 
     if CSV:
-      print("File, Expected, Result, Time, Status, approximate ULPs between")
+      print("File, Status, Expected, Result, Absolute_Difference, ULPs_Difference, Time")
       
     for test in tests:
       # build up the subprocess command
