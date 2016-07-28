@@ -124,10 +124,11 @@ def ulps_between(x, y):
 def are_close(expected, result):
   if isinf(expected) and isinf(result):
     return True
+  abs_diff = abs(expected-result)
   if expected == 0.0:
-    return result < 0.0001
-  ulps_diff = ulps_between(expected, result)
-  return ulps_diff < 2**(52-8)
+    return abs_diff < 0.00001
+  return abs_diff < 0.00001 or abs_diff/expected < 0.01
+
   
 
 def are_rigerous(expected, result):
@@ -141,7 +142,9 @@ def are_rigerous(expected, result):
 
 
 def process_test(cmd, test, expected):
-  basename = path.basename(cmd[1])
+  all_dirs, basename = path.split(test)
+  unused, last_dir = path.split(all_dirs)
+  testname = path.join(last_dir, basename)
   cmd = " ".join(cmd)
   
 
@@ -158,25 +161,27 @@ def process_test(cmd, test, expected):
 
   printstate = STATUS_FMT[state](state)
   ulps = ulps_between(expected, result)
+  abs_diff = abs(result-expected)
+  if isinf(result) and isinf(expected):
+    abs_diff = 0
   expected = 'unknown' if isnan(expected) else expected
-  result = 'no answer found' if isnan(result) else result
-
+  result = 'no_answer_found' if isnan(result) else result
   
   if CSV:
-    str_result = "{}, {}, {}, {}, {}, {}, {}".format(basename,
-                                                 state,
-                                                 expected,
-                                                 result,
-                                                 result-expected,
-                                                 ulps,
-                                                 elapsed)
+    str_result = "{}, {}, {}, {}, {}, {}, {}".format(testname,
+                                                     state,
+                                                     expected,
+                                                     result,
+                                                     abs_diff,
+                                                     ulps,
+                                                     elapsed)
     
   else:
     str_result = "{}\n".format(cmd)
     str_result += "State:     {}\n".format(printstate)
     str_result += "Expected:  {}\n".format(expected)
     str_result += "Result:    {}\n".format(result)
-    str_result += "Abs Diff:  {} \n".format(result-expected)
+    str_result += "Abs Diff:  {} \n".format(abs_diff)
     str_result += "ULPs Diff: {}\n".format(int(ulps))
     str_result += "Time:      {}\n\n".format(elapsed)
 
@@ -300,12 +305,15 @@ def main():
   statuses = sorted(STATUS_COUNT.keys())
   maxlabel = max([len(s) for s in statuses])
   fmtstr = "{{:{}}}".format(maxlabel)
+  tests_ran = sum(STATUS_COUNT.values())
   for status in statuses:
     label = fmtstr.format(status)
     print("{} : {}".format(STATUS_FMT[status](label), STATUS_COUNT[status]))
+  label = fmtstr.format("TOTAL")
+  print("{} : {}".format(label, tests_ran))
 
   if (total != sum(STATUS_COUNT.values())):
-    print(red("\nERROR:")+"number of tests does not equal total, there is a bug in {}".format(sys.argv[0]))
+    print(red("\nERROR:")+"number of tests ran({}) does not equal total tests({}), there is a bug in {}".format(tests_ran, total, sys.argv[0]))
 
 
 if __name__=="__main__":
