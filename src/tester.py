@@ -42,14 +42,14 @@ def fmt(tag, text):
   else:
     return text
 
-  
+
 def bold(text):
   return fmt('\033[1m', text)
 
 
 def color(color_code, text):
   return fmt('\033[0;3{}m'.format(color_code), text)
-             
+
 
 def red(text):
   return color(1, text)
@@ -69,7 +69,7 @@ def magenta(text):
 def cyan(text):
   return color(6, text)
 
-  
+
 def compare_result(expected, result, timeoutp):
   if isnan(result):
     if timeoutp:
@@ -79,7 +79,7 @@ def compare_result(expected, result, timeoutp):
 
   if isnan(expected):
     return "UNKNOWN"
-  
+
   res = "CLOSE" if are_close(expected, result) else "FAR"
   if not are_rigerous(expected, result):
     res = "BAD_"+res
@@ -89,7 +89,7 @@ def compare_result(expected, result, timeoutp):
 def get_expected(filename):
   with open(filename, 'r') as f:
     data = f.read()
-    
+
   ansmatch = re.search(r'\#[ \t]*answer:[ \y]*([^ \n]+)', data)
   maxmatch = re.search(r'\#[ \t]*maximum:[ \y]*([^ \n]+)', data)
   minmatch = re.search(r'\#[ \t]*minimum:[ \y]*([^ \n]+)', data)
@@ -119,17 +119,17 @@ def ulps_between(x, y):
   if isnan(x) or isnan(y):
     return float('nan')
   return abs(to_ulps(x) - to_ulps(y))
-  
-    
+
+
 def are_close(expected, result):
   if isinf(expected) and isinf(result):
     return True
   abs_diff = abs(expected-result)
   if expected == 0.0:
     return abs_diff < 0.00001
-  return abs_diff < 0.00001 or abs_diff/expected < 0.01
+  return abs_diff < 0.00001 or abs_diff/abs(expected) < 0.01
 
-  
+
 
 def are_rigerous(expected, result):
   if isinf(expected) and isinf(result):
@@ -146,7 +146,7 @@ def process_test(cmd, test, expected):
   unused, last_dir = path.split(all_dirs)
   testname = path.join(last_dir, basename)
   cmd = " ".join(cmd)
-  
+
 
   t0 = time.time()
   p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -166,7 +166,7 @@ def process_test(cmd, test, expected):
     abs_diff = 0
   expected = 'unknown' if isnan(expected) else expected
   result = 'no_answer_found' if isnan(result) else result
-  
+
   if CSV:
     str_result = "{}, {}, {}, {}, {}, {}, {}".format(testname,
                                                      state,
@@ -175,14 +175,14 @@ def process_test(cmd, test, expected):
                                                      abs_diff,
                                                      ulps,
                                                      elapsed)
-    
+
   else:
     str_result = "{}\n".format(cmd)
     str_result += "State:     {}\n".format(printstate)
     str_result += "Expected:  {}\n".format(expected)
     str_result += "Result:    {}\n".format(result)
     str_result += "Abs Diff:  {} \n".format(abs_diff)
-    str_result += "ULPs Diff: {}\n".format(int(ulps))
+    str_result += "ULPs Diff: {}\n".format(ulps)
     str_result += "Time:      {}\n\n".format(elapsed)
 
   return str_result, state
@@ -221,7 +221,7 @@ def main():
   CSV = args.csv
   DREAL = args.dreal
   flags = args.flags
-  
+
   # change mode
   if args.dreal:
     flags += ["--dreal"]
@@ -248,7 +248,7 @@ def main():
     exten = ".txt"
     pref = "@"
     import gelpia_test_support as support
-  
+
   try:
     # start the tests
     print("Running benchmarks...")
@@ -260,14 +260,14 @@ def main():
     tests = [f for f in tests if f.endswith(exten)]
     total = len(tests)
     print("{} benchmarks to process".format(total))
-    
+
     n_threads = min(total+1, args.n_threads)
     print("Creating Pool with '{}' Workers\n".format(n_threads), flush=True)
     p = multiprocessing.pool.ThreadPool(processes=n_threads)
 
     if CSV:
       print("File, Status, Expected, Result, Absolute_Difference, ULPs_Difference, Time")
-      
+
     for test in tests:
       # build up the subprocess command
       cmd = [exe,
@@ -318,4 +318,3 @@ def main():
 
 if __name__=="__main__":
   main()
-
