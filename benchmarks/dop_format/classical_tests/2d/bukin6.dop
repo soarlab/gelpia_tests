@@ -1,4 +1,5 @@
-# answer: 0 at (-10, 1)
+# maximum: 0 at (-10, 1)
+# minimum: ?
 
 var:
 [-15, -5] x1;

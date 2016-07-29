@@ -1,5 +1,6 @@
-# answer: -3 at (0, -1)
+# maximum: -3 at (0, -1)
 # gelpia: returns a coarse approximation with default parameters
+# minimum: ?
 
 var:
 [-2, 2] x1;

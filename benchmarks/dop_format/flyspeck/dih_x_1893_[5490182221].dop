@@ -1,5 +1,6 @@
-# answer < 0 (almost zero)
+# maximum: < 0 (almost zero)
 # -oe 1e-4 yields a correct result
+# minimum: ?
 
 var:
 [4.0, 6.3504] x1;

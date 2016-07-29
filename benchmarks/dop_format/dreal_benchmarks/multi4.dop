@@ -1,6 +1,5 @@
+# maximum: ?
 # minimum: 5
-
-# NOT WORKING
 
 var:
 [1, 4] x;

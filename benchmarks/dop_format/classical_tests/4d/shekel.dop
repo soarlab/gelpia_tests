@@ -1,4 +1,5 @@
-# answer: 10.5364 at (4,4,4,4)
+# maximum: 10.5364 at (4,4,4,4)
+# minimum: ?
 
 var:
 [0, 10] x1;

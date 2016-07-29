@@ -1,4 +1,5 @@
-# NOT WORKING
+# maximum: ?
+# minimum: ?
 
 var:
 [-50, 50] x;

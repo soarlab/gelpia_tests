@@ -1,4 +1,5 @@
-# answer: 390625
+# maximum: 390625
+# minimum: 390625
 
 var:
 [-5,5] x;

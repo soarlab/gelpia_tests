@@ -1,4 +1,5 @@
-# answer: 0 at x_i = 2^(-(2^i - 2) / 2^i)
+# maximum: 0 at x_i = 2^(-(2^i - 2) / 2^i)
+# minimum: ?
 
 var:
 [-10, 10] x1;

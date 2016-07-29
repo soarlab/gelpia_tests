@@ -1,4 +1,4 @@
-# answer: 990
+# maximum: 990
 -ie .01
 -oe .01
 -f "x * (1-x) * (1-y)"

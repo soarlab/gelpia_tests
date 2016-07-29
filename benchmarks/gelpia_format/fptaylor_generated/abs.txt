@@ -1,4 +1,4 @@
-# answer: 2
+# maximum: 2
 -ie .01
 -oe .01
 -f "abs(x)"

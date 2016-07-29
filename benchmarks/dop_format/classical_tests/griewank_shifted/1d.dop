@@ -1,4 +1,5 @@
-# answer: 0 at (1.1)
+# maximum: 0 at (1.1)
+# minimum: ?
 
 var:
 [-600, 600] x1;
