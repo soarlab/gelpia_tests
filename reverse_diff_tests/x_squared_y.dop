@@ -1,0 +1,9 @@
+#answer: dx = (* (y) (* (2) (x)))
+#answer: dy = (pow (x) (2))
+
+var:
+[0, 1] x;
+[0, 1] y;
+
+cost:
+x^2*y

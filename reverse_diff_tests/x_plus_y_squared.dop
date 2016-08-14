@@ -1,0 +1,11 @@
+#answer: dx = (1)
+#answer: dy = (* (2) (y))
+
+var:
+[0,1] x;
+[0,1] y;
+
+cost:
+x+y^2
+
+

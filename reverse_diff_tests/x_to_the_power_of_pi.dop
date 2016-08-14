@@ -1,0 +1,7 @@
+#answer: dx = (* (pi) (pow (x) (- (pi) (1))))
+
+var:
+[0,1] x;
+
+cost:
+x^pi

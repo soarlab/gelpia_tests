@@ -1,0 +1,7 @@
+#answer: dx = (* (2) (x))
+
+var:
+[0,1] x;
+
+cost:
+x^2

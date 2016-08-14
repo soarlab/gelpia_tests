@@ -1,11 +1,14 @@
 
 
-all: bin/tester bin/dOp_wrapper
+all: bin/tester bin/dOp_wrapper bin/reverse_diff_tester
 
+bin/reverse_diff_tester: src/*.py src/reverse_diff_tester.py
+	cp src/*.py bin
+	cp src/reverse_diff_tester.py bin/reverse_diff_tester
+	chmod +x bin/reverse_diff_tester
 
-bin/tester: src/tester.py src/gelpia_test_support.py src/dop_test_support.py
-	cp src/gelpia_test_support.py bin
-	cp src/dop_test_support.py bin
+bin/tester: src/tester.py src/*.py
+	cp src/*.py bin
 	cp src/tester.py bin/tester
 	chmod +x bin/tester
 
@@ -20,7 +23,7 @@ test: all
 	./bin/tester --exe=gelpia benchmarks/gelpia_format/fptaylor_generated
 
 .PHONY: test-dreal
-test-dreal: all 
+test-dreal: all
 	./bin/tester --exe=dOp_wrapper --dreal benchmarks/dop_format/dreal_benchmarks
 
 .PHONY: clean

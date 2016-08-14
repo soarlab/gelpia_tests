@@ -1,0 +1,7 @@
+#answer: dx = (cos (x))
+
+var:
+[0, 1] x;
+
+cost:
+sin(x)

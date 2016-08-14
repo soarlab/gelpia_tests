@@ -1,0 +1,7 @@
+#answer: dx = (exp (x))
+
+var:
+[0, 1] x;
+
+cost:
+exp(x)

@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 
+from color_printing import *
 
 STATUS_FMT = {"FAILED"    : lambda t : red(bold(t)),
               "TIMEOUT"   : lambda t : cyan(t),
@@ -20,7 +21,8 @@ STATUS_FMT = {"FAILED"    : lambda t : red(bold(t)),
               "CLOSE"     : lambda t : green(t),
               "FAR"       : lambda t : green(bold(t)),
               "BAD_CLOSE" : lambda t : magenta(t),
-              "BAD_FAR"   : lambda t : magenta(bold(t)),}
+              "BAD_FAR"   : lambda t : magenta(bold(t)),
+              "SKIPPED"   : lambda t : bold(t),}
 
 STATUS_COUNT = {"FAILED"    : 0,
                 "TIMEOUT"   : 0,
@@ -28,46 +30,10 @@ STATUS_COUNT = {"FAILED"    : 0,
                 "CLOSE"     : 0,
                 "FAR"       : 0,
                 "BAD_CLOSE" : 0,
-                "BAD_FAR"   : 0,}
+                "BAD_FAR"   : 0,
+                "SKIPPED"   : 0,}
 
 
-if sys.stdout.isatty():
-  do_fmt = True
-else:
-  do_fmt = False
-
-def fmt(tag, text):
-  if do_fmt:
-    return tag+text+'\033[0m'
-  else:
-    return text
-
-
-def bold(text):
-  return fmt('\033[1m', text)
-
-
-def color(color_code, text):
-  return fmt('\033[0;3{}m'.format(color_code), text)
-
-
-def red(text):
-  return color(1, text)
-
-def green(text):
-  return color(2, text)
-
-def yellow(text):
-  return color(3, text)
-
-def blue(text):
-  return color(4, text)
-
-def magenta(text):
-  return color(5, text)
-
-def cyan(text):
-  return color(6, text)
 
 
 def compare_result(expected, result, timeoutp):
@@ -94,19 +60,22 @@ def get_expected(filename):
   maxmatch = re.search(r'\#[ \t]*maximum:[ \y]*([^ \n]+)', data)
   minmatch = re.search(r'\#[ \t]*minimum:[ \y]*([^ \n]+)', data)
 
-  if DREAL:
-    if minmatch:
-      return float(minmatch.group(1) if minmatch.group(1)!="?" else 'nan')
-    else:
-      return float('nan')
+  try:
+    if DREAL:
+      if minmatch:
+        return float(minmatch.group(1) if minmatch.group(1)!="?" else 'nan')
+      else:
+        return float('nan')
 
-  else:
-    if ansmatch:
-      return float(ansmatch.group(1) if ansmatch.group(1)!="?" else 'nan')
-    elif maxmatch:
-      return float(maxmatch.group(1) if maxmatch.group(1)!="?" else 'nan')
     else:
-      return float('nan')
+      if ansmatch:
+        return float(ansmatch.group(1) if ansmatch.group(1)!="?" else 'nan')
+      elif maxmatch:
+        return float(maxmatch.group(1) if maxmatch.group(1)!="?" else 'nan')
+      else:
+        return float('nan')
+  except:
+    return float('nan')
 
 
 
@@ -161,7 +130,9 @@ def process_test(cmd, test, expected):
 
   printstate = STATUS_FMT[state](state)
   ulps = ulps_between(expected, result)
+  ulps = "unknown" if isnan(ulps) else ulps
   abs_diff = abs(result-expected)
+  abs_diff = "unknown" if isnan(abs_diff) else abs_diff
   if isinf(result) and isinf(expected):
     abs_diff = 0
   expected = 'unknown' if isnan(expected) else expected
@@ -214,6 +185,7 @@ def main():
   parser.add_argument("--timeout", type=int, help="How long each executable has, 0 for no timout", default=60)
   parser.add_argument("--dreal", action='store_const', const=True, default=False)
   parser.add_argument("--csv", action='store_const', const=True, default=False)
+  parser.add_argument("--skip", action='store_const', help="Skip tests with unknown answers", const=True, default=False)
   parser.add_argument("benchmark_dir")
   args = parser.parse_args()
 
@@ -274,6 +246,9 @@ def main():
              pref+test,
              "-t {}".format(args.timeout)] + flags
       expected = get_expected(test)
+      if args.skip and isnan(expected):
+        STATUS_COUNT["SKIPPED"] += 1
+        continue
 
       if False:#"bad hack ian should remove":
         tally_result(process_test(cmd[:], test, expected))
