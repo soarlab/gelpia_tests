@@ -141,7 +141,7 @@ def main():
 
     for test in tests:
       # build up the subprocess command
-      cmd = [exe, test, "test"]
+      cmd = ["python3", exe, test, "test"]
       expected = get_expected(test)
       if args.skip and expected=="":
         STATUS_COUNT["SKIPPED"] += 1
