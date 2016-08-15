@@ -36,7 +36,7 @@ def compare_result(expected, result):
                    ("Input",""),
                    ("'",""),
                    (",",""),
-                   ("Neg", "-"),
+                   ("neg", "-"),
                    ("[","("),
                    ("]",")"),
                    ("powi","pow")]
