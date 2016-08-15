@@ -1,0 +1,7 @@
+#answer: dx = (/ (1) (sqrt (- (1) (pow (x) (2)))))
+
+var:
+[0,1] x;
+
+cost:
+arcsin(x)
