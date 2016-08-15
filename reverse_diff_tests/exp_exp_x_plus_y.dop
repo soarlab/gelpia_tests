@@ -1,0 +1,9 @@
+#answer: dx = (* (exp (+ (x) (y))) (exp (exp (+ (x) (y)))))
+#answer: dy = (* (exp (+ (x) (y))) (exp (exp (+ (x) (y)))))
+
+var:
+[0,1] x;
+[0,1] y;
+
+cost:
+exp(exp(x+y))

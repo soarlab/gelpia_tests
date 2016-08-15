@@ -1,0 +1,11 @@
+#answer: dx = (* (z) (y))
+#answer: dy = (* (z) (x))
+#answer: dz = (* (x) (y))
+
+var:
+[0,1] x;
+[0,1] y;
+[0,1] z;
+
+cost:
+x*y*z
