@@ -1,5 +1,5 @@
 #answer: dx = (/ (1) (y))
-#answer: dy = (* (-(x)) (/ (1) (pow (y) (2))))
+#answer: dy = (/ (-(x)) (pow (y) (2)))
 
 var:
 [0, 1] x;
