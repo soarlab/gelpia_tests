@@ -1,0 +1,6 @@
+#answer: dx = (0)
+var:
+[0,1] x;
+
+cost:
+x-x
