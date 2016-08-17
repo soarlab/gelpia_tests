@@ -115,7 +115,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("--threads", action="store", dest="n_threads", default=num_cpus, type=int,
                       help="execute regressions using the selected number of threads in parallel")
-  parser.add_argument("--exe", type=str, help="What executable to run", default="gelpia")
+  parser.add_argument("--rd", type=str, help="Reverse diff pass script", default="pass_reverse_diff.py")
   parser.add_argument("--skip", action='store_const', help="Skip tests with unknown answers", const=True, default=False)
   parser.add_argument("benchmark_dir")
   args = parser.parse_args()
