@@ -19,6 +19,7 @@ STATUS_FMT = {"FAILED"    : lambda t : red(bold(t)),
               "TIMEOUT"   : lambda t : cyan(t),
               "UNKNOWN"   : lambda t : yellow(t),
               "CLOSE"     : lambda t : green(t),
+              "EXACT"     : lambda t : green(t),
               "FAR"       : lambda t : green(bold(t)),
               "BAD_CLOSE" : lambda t : magenta(t),
               "BAD_FAR"   : lambda t : magenta(bold(t)),
@@ -28,6 +29,7 @@ STATUS_COUNT = {"FAILED"    : 0,
                 "TIMEOUT"   : 0,
                 "UNKNOWN"   : 0,
                 "CLOSE"     : 0,
+                "EXACT"     : 0,
                 "FAR"       : 0,
                 "BAD_CLOSE" : 0,
                 "BAD_FAR"   : 0,
@@ -45,6 +47,9 @@ def compare_result(expected, result, timeoutp):
 
   if isnan(expected):
     return "UNKNOWN"
+
+  if expected == result:
+    return "EXACT"
 
   res = "CLOSE" if are_close(expected, result) else "FAR"
   if not are_rigerous(expected, result):
@@ -125,7 +130,7 @@ def process_test(cmd, test, expected):
   elapsed = time.time() - t0
 
   # get the test results
-  result = support.get_result(out+err)
+  result = support.get_result(out+err, DREAL)
   state = compare_result(expected, result, elapsed>=TIMEOUT)
 
   printstate = STATUS_FMT[state](state)
@@ -138,6 +143,9 @@ def process_test(cmd, test, expected):
   expected = 'unknown' if isnan(expected) else expected
   result = 'no_answer_found' if isnan(result) else result
 
+  if elapsed >= TIMEOUT:
+    elapsed = yellow(str(elapsed))
+
   if CSV:
     str_result = "{}, {}, {}, {}, {}, {}, {}".format(testname,
                                                      state,
@@ -149,12 +157,15 @@ def process_test(cmd, test, expected):
 
   else:
     str_result = "{}\n".format(cmd)
+    str_result += "Full stdout:\n  {}\n".format(out.strip().replace("\n", "\n  "))
+    if err.strip() != "":
+      str_result += "Full stderr:\n  {}\n".format(err.strip().replace("\n", "\n  "))
     str_result += "State:     {}\n".format(printstate)
     str_result += "Expected:  {}\n".format(expected)
     str_result += "Result:    {}\n".format(result)
-    str_result += "Abs Diff:  {} \n".format(abs_diff)
+    str_result += "Abs Diff:  {}\n".format(abs_diff)
     str_result += "ULPs Diff: {}\n".format(ulps)
-    str_result += "Time:      {}\n\n".format(elapsed)
+    str_result += "Time:      {}\n\n\n\n".format(elapsed)
 
   return str_result, state
 

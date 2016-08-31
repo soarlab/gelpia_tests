@@ -7,5 +7,3 @@ def get_result(output):
   else:
     print(output)
     return float('nan')
-
-  
