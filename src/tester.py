@@ -15,7 +15,8 @@ import time
 
 from color_printing import *
 
-STATUS_FMT = {"FAILED"    : lambda t : red(bold(t)),
+STATUS_FMT = {"FAILED"    : lambda t : red(t),
+              "BROKEN"    : lambda t : red(bold(t)),
               "TIMEOUT"   : lambda t : cyan(t),
               "UNKNOWN"   : lambda t : yellow(t),
               "CLOSE"     : lambda t : green(t),
@@ -26,6 +27,7 @@ STATUS_FMT = {"FAILED"    : lambda t : red(bold(t)),
               "SKIPPED"   : lambda t : bold(t),}
 
 STATUS_COUNT = {"FAILED"    : 0,
+                "BROKEN"    : 0,
                 "TIMEOUT"   : 0,
                 "UNKNOWN"   : 0,
                 "CLOSE"     : 0,
@@ -38,8 +40,8 @@ STATUS_COUNT = {"FAILED"    : 0,
 
 
 
-def compare_result(expected, result, timeoutp):
-  if isnan(result):
+def compare_result(expected, result_low, result_high, timeoutp):
+  if isnan(result_low):
     if timeoutp:
       return "TIMEOUT"
     else:
@@ -47,6 +49,14 @@ def compare_result(expected, result, timeoutp):
 
   if isnan(expected):
     return "UNKNOWN"
+
+  if GELPIA and (expected < result_low or expected > result_high):
+    return "BROKEN"
+
+  if DREAL:
+    result = result_low
+  else:
+    result = result_high
 
   if expected == result:
     return "EXACT"
@@ -130,8 +140,13 @@ def process_test(cmd, test, expected):
   elapsed = time.time() - t0
 
   # get the test results
-  result = support.get_result(out+err, DREAL)
-  state = compare_result(expected, result, elapsed>=TIMEOUT)
+  low_result, high_result = support.get_result(out+err, DREAL)
+  state = compare_result(expected, low_result, high_result, elapsed>=TIMEOUT)
+
+  if DREAL:
+    result = low_result
+  else:
+    result = high_result
 
   printstate = STATUS_FMT[state](state)
   ulps = ulps_between(expected, result)
@@ -183,7 +198,7 @@ def main():
   """
   Main entry point for the test suite.
   """
-  global TIMEOUT, support, CSV, DREAL
+  global TIMEOUT, support, CSV, DREAL, GELPIA
   t0 = time.time()
   num_cpus = multiprocessing.cpu_count()//2
 
@@ -214,20 +229,25 @@ def main():
   exe = args.exe
   base = path.basename(args.exe)
   if base == "gelpia":
+    GELPIA = True
     exten = ".txt"
     pref = "@"
     import gelpia_test_support as support
   elif base == "dop_gelpia":
+    GELPIA = True
     exten = ".dop"
     pref = ""
     import gelpia_test_support as support
   elif base == "dOp_wrapper":
+    GELPIA = False
+    DREAL = True
     exten = ".dop"
     pref = ""
     flags = []
     import dop_test_support as support
   else:
     print(yellow("WARNING") + ": assuming gelpia compatable executable")
+    GELPIA = True
     exten = ".txt"
     pref = "@"
     import gelpia_test_support as support

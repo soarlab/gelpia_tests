@@ -8,12 +8,9 @@ def get_result(output, DREAL):
     lst = eval(output, {'inf':float('inf')})
   except:
     #print(output)
-    return float('nan')
+    return float('nan'), float('nan')
+  l, h = float(lst[0][0]), float(lst[0][1])
+  if l > h:
+    print("\n\n\n\n\nUPSIDE DOWN\n\n\n\n\n")
+  return l, h
 
-  if type(lst[0]) is list:
-    if DREAL:
-      return float(lst[0][0])
-    else:
-      return float(lst[0][1])
-  else:
-    return float(lst[0])
