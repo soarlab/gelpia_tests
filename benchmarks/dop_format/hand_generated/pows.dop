@@ -1,5 +1,5 @@
 # maximum: 390625
-# minimum: 390625
+# minimum: 0
 
 var:
 [-5,5] x;

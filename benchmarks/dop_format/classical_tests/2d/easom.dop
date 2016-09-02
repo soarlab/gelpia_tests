@@ -1,9 +1,0 @@
-# maximum: 1 at (pi, pi) found via wolfram mathematica
-# minimum: 0 at (-100, -100) found via wolfram mathematica
-
-var:
-[-100, 100] x1;
-[-100, 100] x2;
-
-cost:
-exp(-(x1 - pi)^2 - (x2 - pi)^2);

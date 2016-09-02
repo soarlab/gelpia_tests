@@ -1,10 +1,11 @@
-# maximum: ?
-# minimum: 0.0007969615
+# maximum: 1.4142135623730950488016887
+# minimum: 0.000796643
 
 var:
 [0,1.57] theta;
 [-0.785, 0.785] gamma;
+[3.141592653589793115997963468544185161590576171875, 3.141592653589793560087173318606801331043243408203125] pi;
 
 cost:
-cos(theta)*cos(gamma+3.14/4);
-cos(theta)*sin(gamma+3.14/4);
+cos(theta)*cos(gamma+pi/4);
+cos(theta)*sin(gamma+pi/4);

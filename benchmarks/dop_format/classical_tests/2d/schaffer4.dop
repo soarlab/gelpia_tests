@@ -1,9 +1,0 @@
-# maximum: -0.500092 found via wolfram mathematica and rounded down
-# minimum: -0.832545 found via wolfram mathematica and rounded up
-
-var:
-[-100, 100] x1;
-[-100, 100] x2;
-
-cost:
--(0.5 + (cos(sin(abs(x1^2 - x2^2))) - 0.5) / (1 + 0.001 * (x1^2 + x2^2))^2);

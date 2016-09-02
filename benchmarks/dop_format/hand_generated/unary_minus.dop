@@ -1,5 +1,5 @@
 # maximum: 0
-# minimum: ?
+# minimum: -100
 
 var:
 [-10, 10] x;

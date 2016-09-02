@@ -1,9 +1,0 @@
-# maximum: 1.91322 at (-0.547198, -1.5472) found via wolfram mathematica
-# minimum: -44.0985 at (-1.5, 4) found via wolfram mathematica
-
-var:
-[-1.5, 4] x1;
-[-3, 4] x2;
-
-cost:
--(sin(x1 + x2) + (x1 - x2)^2 - 1.5 * x1 + 2.5 * x2 + 1);

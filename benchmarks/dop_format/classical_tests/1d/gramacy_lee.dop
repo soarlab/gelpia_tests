@@ -1,8 +1,0 @@
-# maximum:  0.86901113 at (0.548563) from Alexey
-# minimum: -5.0624 at (2.5) found via wolfram alpha and rounded up
-
-var:
-[0.5, 2.5] x;
-
-cost:
--(sin(10 * pi * x) / (2 * x) + (x - 1)^4);

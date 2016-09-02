@@ -1,9 +1,0 @@
-# maximum: 959.6406 at (512, 404.2319)
-# minimum: ?
-
-var:
-[-512, 512] x1;
-[-512, 512] x2;
-
-cost:
-(x2 + 47) * sin(sqrt(abs(x2 + x1 / 2 + 47))) + x1 * sin(sqrt(abs(x1 - (x2 + 47))));
