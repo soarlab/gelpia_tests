@@ -1,0 +1,7 @@
+# maximum: 3
+# minimum: 3
+
+var:
+
+cost:
+1 + 2;

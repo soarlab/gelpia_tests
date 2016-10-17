@@ -1,0 +1,8 @@
+# maximum: 0
+# minimum: 0
+
+var:
+[0, 3] x;
+
+cost:
+-x + x
