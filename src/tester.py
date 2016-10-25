@@ -161,14 +161,17 @@ def process_test(cmd, test, expected):
   if elapsed >= TIMEOUT:
     elapsed = yellow(str(elapsed))
 
+  if ONLY_BROKEN and state not in {"BROKEN", "FAILED"}:
+    return ".", state
+
   if CSV:
-    str_result = "{}, {}, {}, {}, {}, {}, {}".format(testname,
-                                                     state,
-                                                     expected,
-                                                     result,
-                                                     abs_diff,
-                                                     ulps,
-                                                     elapsed)
+    str_result = "{}, {}, {}, {}, {}, {}, {}\n".format(testname,
+                                                       state,
+                                                       expected,
+                                                       result,
+                                                       abs_diff,
+                                                       ulps,
+                                                       elapsed)
 
   else:
     str_result = "{}\n".format(cmd)
@@ -190,7 +193,7 @@ def tally_result(tup):
   Tallies the result of each worker. This will only be called by the main thread.
   """
   str_result, state = tup
-  print(str_result, flush=True)
+  print(str_result, end="", flush=True)
   STATUS_COUNT[state] += 1
 
 support = None
@@ -198,7 +201,7 @@ def main():
   """
   Main entry point for the test suite.
   """
-  global TIMEOUT, support, CSV, DREAL, GELPIA
+  global TIMEOUT, support, CSV, DREAL, GELPIA, ONLY_BROKEN
   t0 = time.time()
   num_cpus = multiprocessing.cpu_count()//2
 
@@ -212,6 +215,7 @@ def main():
   parser.add_argument("--dreal", action='store_const', const=True, default=False)
   parser.add_argument("--csv", action='store_const', const=True, default=False)
   parser.add_argument("--skip", action='store_const', help="Skip tests with unknown answers", const=True, default=False)
+  parser.add_argument("--broken", action='store_const', help="Only print tests in the broken category", const=True, default=False)
   parser.add_argument("benchmark_dir")
   args = parser.parse_args()
 
@@ -219,7 +223,8 @@ def main():
   CSV = args.csv
   DREAL = args.dreal
   flags = args.flags
-
+  ONLY_BROKEN = args.broken
+  
   # change mode
   if args.dreal:
     flags += ["--dreal"]
