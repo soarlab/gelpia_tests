@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from math import isnan, isinf
+
+from math import isnan, isinf, copysign
 
 import argparse
 import glob
@@ -14,6 +15,7 @@ import sys
 import time
 
 from color_printing import *
+
 
 STATUS_FMT = {"FAILED"    : lambda t : red(t),
               "BROKEN"    : lambda t : red(bold(t)),
@@ -50,7 +52,9 @@ def compare_result(expected, result_low, result_high, timeoutp):
   if isnan(expected):
     return "UNKNOWN"
 
-  if GELPIA and (expected < result_low or expected > result_high):
+  if GELPIA and (expected < result_low
+                 or expected > result_high
+                 or result_low > result_high):
     return "BROKEN"
 
   if DREAL:
@@ -64,6 +68,7 @@ def compare_result(expected, result_low, result_high, timeoutp):
   res = "CLOSE" if are_close(expected, result) else "FAR"
   if not are_rigerous(expected, result):
     res = "BAD_"+res
+
   return res
 
 
@@ -89,12 +94,12 @@ def get_expected(filename):
         return float(maxmatch.group(1) if maxmatch.group(1)!="?" else 'nan')
       else:
         return float('nan')
+
   except:
     return float('nan')
 
 
-
-def to_ulps(x):
+def to_hex(x):
   n = struct.unpack('<q', struct.pack('<d', x))[0]
   return -(n + 2**63) if n < 0 else n
 
@@ -102,17 +107,18 @@ def to_ulps(x):
 def ulps_between(x, y):
   if isnan(x) or isnan(y):
     return float('nan')
-  return abs(to_ulps(x) - to_ulps(y))
+  if copysign(1.0, x) != copysign(1.0, y):
+    return ulps_between(0.0, abs(x)) + ulps_between(0.0, abs(y))
+  return abs(to_hex(x) - to_hex(y))
 
 
-def are_close(expected, result):
+def are_close(expected, result, rel_bound=0.01, abs_bound=1e-6 ):
   if isinf(expected) and isinf(result):
     return True
   abs_diff = abs(expected-result)
   if expected == 0.0:
-    return abs_diff < 0.00001
-  return abs_diff < 0.00001 or abs_diff/abs(expected) < 0.01
-
+    return abs_diff < abs_bound
+  return abs_diff < abs_bound or abs_diff/abs(expected) < rel_bound
 
 
 def are_rigerous(expected, result):
@@ -131,101 +137,149 @@ def process_test(cmd, test, expected):
   testname = path.join(last_dir, basename)
   cmd = " ".join(cmd)
 
+  try:
+    t0 = time.time()
+    p = subprocess.Popen(cmd, shell=True,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err  = p.communicate()
+    t1 = time.time()
 
-  t0 = time.time()
-  p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  out, err  = p.communicate()
-  out = out.decode('utf-8')
-  err = err.decode('utf-8')
-  elapsed = time.time() - t0
+    out = out.decode('utf-8').strip()
+    err = err.decode('utf-8').strip()
+    elapsed = t1 - t0
 
-  # get the test results
-  low_result, high_result = support.get_result(out+err, DREAL)
-  state = compare_result(expected, low_result, high_result, elapsed>=TIMEOUT)
+    low_result, high_result = support.get_result(out+"\n"+err, DREAL)
+    state = compare_result(expected, low_result, high_result, elapsed>=TIMEOUT)
 
-  if DREAL:
-    result = low_result
-  else:
-    result = high_result
+    if DREAL:
+      result = low_result
+    else:
+      result = high_result
 
-  printstate = STATUS_FMT[state](state)
-  ulps = ulps_between(expected, result)
-  ulps = "unknown" if isnan(ulps) else ulps
-  abs_diff = abs(result-expected)
-  abs_diff = "unknown" if isnan(abs_diff) else abs_diff
-  if isinf(result) and isinf(expected):
-    abs_diff = 0
-  expected = 'unknown' if isnan(expected) else expected
-  result = 'no_answer_found' if isnan(result) else result
+    printstate = STATUS_FMT[state](state)
+    ulps = ulps_between(expected, result)
+    ulps = "unknown" if isnan(ulps) else ulps
+    abs_diff = 0 if isinf(result) and isinf(expected) else abs(result-expected)
+    abs_diff = "unknown" if isnan(abs_diff) else abs_diff
+    expected = 'unknown' if isnan(expected) else expected
+    result = 'no_answer_found' if isnan(result) else result
 
-  if elapsed >= TIMEOUT:
-    elapsed = yellow(str(elapsed))
+    if elapsed >= TIMEOUT:
+      elapsed = yellow(str(elapsed))
 
-  if ONLY_BROKEN and state not in {"BROKEN", "FAILED"}:
-    return ".", state
+    if state == "FAILED":
+      with open("fail_" + cmd.replace(" ","_").replace("/","-"), "w") as f:
+        f.write(out+"\n\n\n\n"+err)
 
-  if CSV:
-    str_result = "{}, {}, {}, {}, {}, {}, {}\n".format(testname,
-                                                       state,
-                                                       expected,
-                                                       result,
-                                                       abs_diff,
-                                                       ulps,
-                                                       elapsed)
+    if ONLY_BROKEN and state not in {"BROKEN", "FAILED"}:
+      return ".\n", state
 
-  else:
-    str_result = "{}\n".format(cmd)
-    str_result += "Full stdout:\n  {}\n".format(out.strip().replace("\n", "\n  "))
-    if err.strip() != "":
-      str_result += "Full stderr:\n  {}\n".format(err.strip().replace("\n", "\n  "))
-    str_result += "State:     {}\n".format(printstate)
-    str_result += "Expected:  {}\n".format(expected)
-    str_result += "Result:    {}\n".format(result)
-    str_result += "Abs Diff:  {}\n".format(abs_diff)
-    str_result += "ULPs Diff: {}\n".format(ulps)
-    str_result += "Time:      {}\n\n\n\n".format(elapsed)
+    if TSV:
+      str_result = "\t".join((str(i) for i in (testname, state,
+                                               expected, result,
+                                               abs_diff, ulps,
+                                               elapsed))) + "\n"
+
+    else:
+      result_form = ("{0}\n"+
+                     "Full stdout:\n" +
+                     "  {1}\n"+
+                     ("" if err == "" else "Full stderr:\n  {2}\n") +
+                     "State:     {3}\n" +
+                     "Expected:  {4}\n" +
+                     "Result:    {5}\n" +
+                     "Abs Diff:  {6}\n" +
+                     "ULPs Diff: {7}\n" +
+                     "Time:      {8}\n" +
+                     "\n"+
+                     "\n"+
+                     "\n")
+      str_result = result_form.format(cmd,
+                                      out.replace("\n", "\n  "),
+                                      err.replace("\n", "\n  "),
+                                      printstate,
+                                      expected,
+                                      result,
+                                      abs_diff,
+                                      ulps,
+                                      elapsed)
+
+  except KeyboardInterrupt as kb:
+    raise kb
+
+  except Exception as e:
+    state = "BROKEN"
+    str_result = "ERROR: Unable to run test command '{}'".format(cmd)
+    str_result += "State: {}\n".format(state)
+    str_result += "Full stdout:\n  {}\n\n".format(out.replace("\n", "\n  "))
+    str_result += "Full stderr:\n  {}\n\n".format(err.replace("\n", "\n  "))
+    str_result += "Exception:\n  {}\n\n".format(str(e).replace("\n", "\n  "))
+    str_result += "\n\n\n"
 
   return str_result, state
 
 
 def tally_result(tup):
-  """
-  Tallies the result of each worker. This will only be called by the main thread.
-  """
   str_result, state = tup
   print(str_result, end="", flush=True)
   STATUS_COUNT[state] += 1
 
+
+
+
 support = None
 def main():
-  """
-  Main entry point for the test suite.
-  """
-  global TIMEOUT, support, CSV, DREAL, GELPIA, ONLY_BROKEN
+  global TIMEOUT, support, TSV, DREAL, GELPIA, ONLY_BROKEN
   t0 = time.time()
-  num_cpus = multiprocessing.cpu_count()//2
+  num_cpus = multiprocessing.cpu_count() // 2
 
   # configure the CLI
   parser = argparse.ArgumentParser()
-  parser.add_argument("--flags", nargs="+", help="Additional command line arguments for the tool under test", default=[])
-  parser.add_argument("--threads", action="store", dest="n_threads", default=num_cpus, type=int,
-                      help="execute regressions using the selected number of threads in parallel")
-  parser.add_argument("--exe", type=str, help="What executable to run", default="gelpia")
-  parser.add_argument("--timeout", type=int, help="How long each executable has, 0 for no timout", default=60)
-  parser.add_argument("--dreal", action='store_const', const=True, default=False)
-  parser.add_argument("--csv", action='store_const', const=True, default=False)
-  parser.add_argument("--skip", action='store_const', help="Skip tests with unknown answers", const=True, default=False)
-  parser.add_argument("--broken", action='store_const', help="Only print tests in the broken category", const=True, default=False)
+  parser.add_argument("--flags",
+                      help="Additional command line arguments for the tool under test",
+                      default=[],
+                      nargs="+")
+  parser.add_argument("--threads",
+                      help="Execute regressions using the selected number of threads in parallel",
+                      type=int,
+                      default=num_cpus,
+                      action="store",
+                      dest="n_threads")
+  parser.add_argument("--exe",
+                      help="What executable to run",
+                      type=str,
+                      default="gelpia")
+  parser.add_argument("--timeout",
+                      help="How long each executable has, 0 for no timout",
+                      type=int,
+                      default=60)
+  parser.add_argument("--dreal",
+                      action='store_const',
+                      const=True,
+                      default=False)
+  parser.add_argument("--tsv",
+                      action='store_const',
+                      const=True,
+                      default=False)
+  parser.add_argument("--skip",
+                      help="Skip tests with unknown answers",
+                      action='store_const',
+                      const=True,
+                      default=False)
+  parser.add_argument("--broken",
+                      help="Only print tests in the broken category",
+                      action='store_const',
+                      const=True,
+                      default=False)
   parser.add_argument("benchmark_dir")
   args = parser.parse_args()
 
   TIMEOUT = args.timeout
-  CSV = args.csv
+  TSV = args.tsv
   DREAL = args.dreal
   flags = args.flags
   ONLY_BROKEN = args.broken
-  
-  # change mode
+
   if args.dreal:
     flags += ["--dreal"]
   else:
@@ -257,62 +311,33 @@ def main():
     pref = "@"
     import gelpia_test_support as support
 
-  try:
-    # start the tests
-    print("Running benchmarks...")
+  print("Running benchmarks...")
 
-    # start processing the tests.
-    results = []
-    tests = sorted(glob.glob(path.join(args.benchmark_dir,"**"),
-                             recursive=True))
-    tests = [f for f in tests if f.endswith(exten)]
-    total = len(tests)
-    print("{} benchmarks to process".format(total))
+  results = []
+  tests = sorted(glob.glob(path.join(args.benchmark_dir,"**"),
+                           recursive=True))
+  tests = [f for f in tests if f.endswith(exten)]
+  total = len(tests)
+  print("{} benchmarks to process".format(total))
 
+  if args.n_threads == 1:
+    print("Benchmarks will be proccessed serially\n")
+  else:
     n_threads = min(total+1, args.n_threads)
     print("Creating Pool with '{}' Workers\n".format(n_threads), flush=True)
     p = multiprocessing.pool.ThreadPool(processes=n_threads)
 
-    if CSV:
-      print("File, Status, Expected, Result, Absolute_Difference, ULPs_Difference, Time")
+  if TSV:
+    print("File\tStatus\tExpected\tResult\tAbsolute_Difference\tULPs_Difference\tTime")
+    no_color_printing()
 
-    for test in tests:
-      # build up the subprocess command
-      cmd = [exe,
-             pref+test,
-             "-t {}".format(args.timeout)] + flags
-      expected = get_expected(test)
-      if args.skip and isnan(expected):
-        STATUS_COUNT["SKIPPED"] += 1
-        continue
-
-      if False:#"bad hack ian should remove":
-        tally_result(process_test(cmd[:], test, expected))
-      else:
-        r = p.apply_async(process_test,
-                          args=(cmd[:], test, expected),
-                          callback=tally_result)
-        results.append(r)
-
-    # keep the main thread active while there are active workers
-    for r in results:
-      r.wait()
-
-  except KeyboardInterrupt:
-    print("\nCaught KeyboardInterrupt, terminating workers")
-    p.terminate() # terminate any remaining workers
-    p.join()
+  if args.n_threads == 1:
+    KB_INT, elapsed_time = do_serial_tests(tests, exe, pref, args, flags)
   else:
-    print("\nQuitting normally")
-    # close the pool. this prevents any more tasks from being submitted.
-    p.close()
-    p.join() # wait for all workers to finish their tasks
+    KB_INT, elapsed_time = do_parallel_tests(tests, p, exe, pref, args, flags)
 
-  # log the elapsed time
-  elapsed_time = time.time() - t0
   print(' ELAPSED TIME [{}]'.format(round(elapsed_time, 2)))
 
-  # log the test results
   statuses = sorted(STATUS_COUNT.keys())
   maxlabel = max([len(s) for s in statuses])
   fmtstr = "{{:{}}}".format(maxlabel)
@@ -323,8 +348,85 @@ def main():
   label = fmtstr.format("TOTAL")
   print("{} : {}".format(label, tests_ran))
 
-  if (total != sum(STATUS_COUNT.values())):
+  if KB_INT == False and total != sum(STATUS_COUNT.values()):
     print(red("\nERROR:")+"number of tests ran({}) does not equal total tests({}), there is a bug in {}".format(tests_ran, total, sys.argv[0]))
+
+
+def do_serial_tests(tests, exe, pref, args, flags):
+  KB_INT = False
+  KB_INT_TIME = time.time() - 10
+  t0 = time.time()
+  for test in tests:
+    try:
+      # build up the subprocess command
+      cmd = [exe,
+             pref+test,
+             "-t {}".format(args.timeout)] + flags
+      expected = get_expected(test)
+      if args.skip and isnan(expected):
+        STATUS_COUNT["SKIPPED"] += 1
+        continue
+
+      tally_result(process_test(cmd[:], test, expected))
+
+    except KeyboardInterrupt:
+      print("\nCaught KeyboardInterrupt")
+      now = time.time()
+      if now - KB_INT_TIME < 1:
+        print("two KeyboardInterrupts within 1 second, stopping testing\n")
+        KB_INT = True
+        break
+      else:
+        print("going on to next test\n")
+      KB_INT_TIME = now
+
+  if KB_INT == False:
+    print("\nQuitting normally")
+
+  elapsed_time = time.time() - t0
+
+  return KB_INT, elapsed_time
+
+
+def do_parallel_tests(tests, p, exe, pref, args, flags):
+  KB_INT = False
+  results = list()
+  t0 = time.time()
+  try:
+    for test in tests:
+      cmd = [exe,
+             pref+test,
+             "-t {}".format(args.timeout)] + flags
+      expected = get_expected(test)
+      if args.skip and isnan(expected):
+        STATUS_COUNT["SKIPPED"] += 1
+        continue
+
+      r = p.apply_async(process_test,
+                        args=(cmd[:], test, expected),
+                        callback=tally_result)
+      results.append(r)
+
+    # keep the main thread active while there are active workers
+    for r in results:
+      r.wait()
+
+  except KeyboardInterrupt:
+    print("\nCaught KeyboardInterrupt, terminating workers\n")
+    KB_INT = True
+    p.terminate()
+    p.join()
+  else:
+    print("\nQuitting normally\n")
+    p.close()
+    p.join()
+
+  elapsed_time = time.time() - t0
+
+  return KB_INT, elapsed_time
+  print(' ELAPSED TIME [{}]'.format(round(elapsed_time, 2)))
+
+
 
 
 if __name__=="__main__":

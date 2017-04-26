@@ -1,5 +1,5 @@
 # maximum: 0 at (0,0)
-# minimum: ?
+# minimum: -2047.9166666819463 provisional
 
 var:
 [-5, 5] x1;

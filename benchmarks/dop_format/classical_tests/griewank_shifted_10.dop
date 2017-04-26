@@ -1,5 +1,5 @@
 # maximum: 1 at (1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1,1.1)
-# minimum: ?
+# minimum: -903.303035 provisional
 
 var:
 [-600, 600] x1;

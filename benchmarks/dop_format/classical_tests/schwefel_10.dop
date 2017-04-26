@@ -1,5 +1,5 @@
 # maximum: 4189.829 at (420.9687,...,420.9687)
-# minimum: ?
+# minimum: -5000.0 provisional
 
 var:
 [-500, 500] x1;

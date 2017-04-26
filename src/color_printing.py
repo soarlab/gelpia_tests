@@ -6,6 +6,15 @@ if sys.stdout.isatty():
 else:
   do_fmt = False
 
+def no_color_printing():
+  global do_fmt
+  do_fmt = False
+
+def color_printing():
+  global do_fmt
+  do_fmt = True
+
+
 def fmt(tag, text):
   if do_fmt:
     return tag+text+'\033[0m'

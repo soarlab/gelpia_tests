@@ -1,0 +1,10 @@
+# maximum: 1.9999999999999907 provisional
+# minimum: 0.9801345
+
+var:
+[-4,4] x1;
+[-4,4] x2;
+
+cost:
+1-exp(-((x1 - sqrt(0.5))^2)-((x2 - sqrt(0.5))^2));
+1-exp(-((x1 + sqrt(0.5))^2)-((x2 + sqrt(0.5))^2));

@@ -1,0 +1,10 @@
+# maximum: 837.965774544867 at (420.9687,...,420.9687)
+# minimum: -838.2944610894788 provisional
+
+var:
+[-500, 500] x1;
+[-500, 500] x2;
+
+cost:
+x1 * sin(sqrt(abs(x1)));
+x2 * sin(sqrt(abs(x2)));

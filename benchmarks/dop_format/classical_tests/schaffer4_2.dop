@@ -1,5 +1,5 @@
 # maximum: 0.5
-# minimum: 0.0000916454 via wolphram mathematica
+# minimum: 9.14021218747961e-05 provisional (original 0.0000916454 via wolphram mathematica)
 
 var:
 [-100, 100] x1;

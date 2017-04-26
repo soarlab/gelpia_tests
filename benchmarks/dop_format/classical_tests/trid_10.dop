@@ -1,5 +1,5 @@
-# maximum: 200
-# minimum: ?
+# maximum: 210 at (10, 18, 24, 28, 30, 30, 28, 24, 18, 10)
+# minimum: -190010.0 provisional
 
 var:
 [-100, 100] x1;
