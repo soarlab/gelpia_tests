@@ -63,8 +63,13 @@ def float_diff(expected, result):
             rel_diff = 0.0
         else:
             rel_diff = float("inf") if abs_diff > 0.0 else float("-inf")
+    elif (isinf(expected)
+          and isinf(result)
+          and copysign(1, expected) == copysign(1, result)):
+          abs_diff = 0.0
+          rel_diff = 0.0
     else:
-        rel_diff = abs_diff / expected
+        rel_diff = abs_diff / abs(expected)
     return abs_diff, rel_diff
 
 
@@ -390,6 +395,9 @@ def main():
     print("Creating Pool with '{}' Workers\n".format(proc_count), flush=True)
     my_pool = multiprocessing.pool.ThreadPool(processes=proc_count)
 
+    if args.tsv:
+        print("Test\tState\tExpected\tResult\tAbs Diff\tRel Diff\tTime")
+
     was_interrupted = do_parallel_tests(args, tests, my_pool, prefix, strict_bounds)
 
     statuses = STATUS_ORDER
@@ -407,6 +415,7 @@ def main():
     maxlabel = max([len(s) for s in statuses])
     fmtstr = "{{:{}}}".format(maxlabel)
     tests_ran = sum(STATUS_COUNT.values())
+    print()
     for status in statuses:
         label = fmtstr.format(status)
         print("{} : {}".format(STATUS_FMT[status](label), STATUS_COUNT[status]))
