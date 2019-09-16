@@ -1,5 +1,10 @@
-# maximum: 2 at (2, 2)
-# minimum: -30002.0 provisional
+# minimum: -30002.0
+#    type: provisional
+#   input: x1=-100.0 x2=100.0
+
+# maximum: 2.0
+#    type: hand solved
+#   input: x1=2.0 x2=2.0
 
 var:
 [-100, 100] x1;

@@ -1,5 +1,10 @@
+# minimum: -1210
+#    type: hand solved
+#   input: x=-10.0 y=-10.0
+
 # maximum: 990
--ie .01
--oe .01
+#    type: hand solved
+#   input: x=-10.0 y=10.0
+
 -f "x * (1-x) * (1-y)"
--i "{'x' : (-10,10), 'y' : (-10,10)}"
+-i "{'x' : (-10.0,10.0), 'y' : (-10.0,10.0)}"

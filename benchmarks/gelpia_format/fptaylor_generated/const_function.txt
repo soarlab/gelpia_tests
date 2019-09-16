@@ -1,5 +1,10 @@
-# maximum: .1
--ie .01
--oe .01
+# minimum: 0.1
+#    type: hand solved
+#   input: N/A
+
+# maximum: 0.1
+#    type: hand solved
+#   input: N/A
+
 -f "0.1"
 -i "{}"

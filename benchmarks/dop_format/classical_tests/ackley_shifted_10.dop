@@ -1,3 +1,11 @@
+# minimum: -22.3
+#    type: provisional
+#   input:
+
+# maximum: 0
+#    type: provisional
+#   input: x1=5.0 x2=5.0 x3=5.0 x4=5.0 x5=5.0 x6=5.0 x7=5.0 x8=5.0 x9=5.0 x10=5.0
+
 # maximum: 0 at (5,...,5)
 # minimum: -22.3 provisional
 

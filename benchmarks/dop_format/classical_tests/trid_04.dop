@@ -1,5 +1,10 @@
-# maximum: 16 at (4, 6, 6, 4)
-# minimum: -70004.0 provisional
+# minimum: -70004.0
+#    type: provisional
+#   input: x1=-100.0 x2=100.0 x3=-100.0 x4=100.0
+
+# maximum: 16.0
+#    type: hand solved
+#   input: x1=4.0 x2=6.0 x3=6.0 x4=4.0
 
 var:
 [-100, 100] x1;

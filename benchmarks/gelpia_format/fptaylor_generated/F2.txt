@@ -1,5 +1,10 @@
+# minimum: 0
+#    type: hand solved
+#   input: x=0 and x=1
+
 # maximum: 0.25
--ie .001
--oe .001
+#    type: hand solved
+#   input: x=0.25
+
 -f "x*(1-x)"
 -i "{'x' : (0,1)}"

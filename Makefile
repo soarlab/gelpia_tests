@@ -18,9 +18,10 @@ bin/dOp_wrapper: src/dOp_wrapper.sh
 
 .PHONY: test
 test: all
-	./bin/tester --exe=dop_gelpia benchmarks/dop_format/hand_generated
-	./bin/tester --exe=dop_gelpia --dreal benchmarks/dop_format/dreal_benchmarks
-	./bin/tester --exe=gelpia benchmarks/gelpia_format/fptaylor_generated
+	./bin/tester -v --exe=dop_gelpia benchmarks/dop_format
+	./bin/tester -v --exe=dop_gelpia --min benchmarks/dop_format
+	./bin/tester -v --exe=gelpia benchmarks/gelpia_format
+	./bin/tester -v --exe=gelpia --min benchmarks/gelpia_format
 
 .PHONY: test-dreal
 test-dreal: all

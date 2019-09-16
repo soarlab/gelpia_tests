@@ -1,5 +1,10 @@
-# maximum: 7 at (3, 4, 3)
-# minimum: -50203.0 provisional
+# minimum: -50203.0
+#    type: provisional
+#   input: x1=-100.0 x2=100.0 x3=-100.0
+
+# maximum: 7.0
+#    type: hand solved
+#   input: x1=3.0 x2=4.0 x3=3.0
 
 var:
 [-100, 100] x1;

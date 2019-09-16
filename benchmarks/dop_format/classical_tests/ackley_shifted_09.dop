@@ -1,5 +1,5 @@
 # maximum: 0 at (5,...,5)
-# minimum: -22.3  provisional
+# minimum: -22.3 provisional
 
 var:
 [-32.768, 32.768] x1;

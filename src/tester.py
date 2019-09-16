@@ -3,6 +3,7 @@
 
 from math import isnan, isinf, copysign
 
+import os
 import argparse
 import glob
 import multiprocessing
@@ -16,248 +17,294 @@ import time
 
 from color_printing import *
 
+class Object:
+    pass
 
-STATUS_FMT = {"FAILED"    : lambda t : red(t),
-              "BROKEN"    : lambda t : red(bold(t)),
-              "TIMEOUT"   : lambda t : cyan(t),
-              "UNKNOWN"   : lambda t : yellow(t),
-              "CLOSE"     : lambda t : green(t),
-              "EXACT"     : lambda t : green(t),
-              "FAR"       : lambda t : green(bold(t)),
-              "BAD_CLOSE" : lambda t : magenta(t),
-              "BAD_FAR"   : lambda t : magenta(bold(t)),
-              "SKIPPED"   : lambda t : bold(t),}
+STATUS_ORDER = ["CRASH", "BROKEN", "FAILED",
+                "BAD_FAR", "BAD_CLOSE",
+                "TIMEOUT",
+                "FAR", "CLOSE",
+                "EXACT",
+                "SKIPPED", "UNKNOWN",
+                "TIMEOUT"]
+STATUS_FMT = {
+  # Tool crashed
+  "CRASH"     : lambda t : red(bold(t)),
+  # Tool completed running, but true answer is unknown
+  "UNKNOWN"   : lambda t : yellow(t),
+  # Test was skipped
+  "SKIPPED"   : lambda t : bold(t),
+  # Test reached timeout
+  "TIMEOUT"   : lambda t : cyan(t),
+  # Answer was exactly correct
+  "EXACT"     : lambda t : green(t),
+  # Answer was close according to metric used
+  "CLOSE"     : lambda t : green(t),
+  # Answer was far according to metric used
+  "FAR"       : lambda t : green(bold(t)),
+  # Non-Gelpia was used and answer was wrong, and close according to metric used
+  "BAD_CLOSE" : lambda t : magenta(t),
+  # Non-Gelpia was used and answer was wrong, and far according to metric used
+  "BAD_FAR"   : lambda t : magenta(bold(t)),
+  # Gelpia was used and answer was wrong
+  "BROKEN"    : lambda t : red(bold(t)),
+  # Did not crash, but no output found
+  "FAILED"    : lambda t : red(t),
+}
 
-STATUS_COUNT = {"FAILED"    : 0,
-                "BROKEN"    : 0,
-                "TIMEOUT"   : 0,
-                "UNKNOWN"   : 0,
-                "CLOSE"     : 0,
-                "EXACT"     : 0,
-                "FAR"       : 0,
-                "BAD_CLOSE" : 0,
-                "BAD_FAR"   : 0,
-                "SKIPPED"   : 0,}
+STATUS_COUNT = {k:0 for k in STATUS_FMT}
 
 
 
-
-def compare_result(expected, result_low, result_high, timeoutp):
-  if isnan(result_low):
-    if timeoutp:
-      return "TIMEOUT"
+def float_diff(expected, result):
+    abs_diff = result - expected
+    if expected == 0.0:
+        if result == 0.0:
+            rel_diff = 0.0
+        else:
+            rel_diff = float("inf") if abs_diff > 0.0 else float("-inf")
     else:
-      return "FAILED"
-
-  if isnan(expected):
-    return "UNKNOWN"
-
-  if GELPIA and (expected < result_low
-                 or expected > result_high
-                 or result_low > result_high):
-    return "BROKEN"
-
-  if DREAL:
-    result = result_low
-  else:
-    result = result_high
-
-  if expected == result:
-    return "EXACT"
-
-  res = "CLOSE" if are_close(expected, result) else "FAR"
-  if not are_rigerous(expected, result):
-    res = "BAD_"+res
-
-  return res
+        rel_diff = abs_diff / expected
+    return abs_diff, rel_diff
 
 
-def get_expected(filename):
-  with open(filename, 'r') as f:
-    data = f.read()
+def calculate_result(args, test_state, strict_bounds):
+    result = test_state.result
+    if result[0] is None or result[1] is None:
+        if test_state.elapsed > args.timeout:
+            test_state.state = "TIMEOUT"
+            test_state.abs_diff = float("nan")
+            test_state.rel_diff = float("nan")
+            return
+        else:
+            test_state.state = "FAILED"
+            test_state.abs_diff = float("nan")
+            test_state.rel_diff = float("nan")
+            return
 
-  ansmatch = re.search(r'\#[ \t]*answer:[ \y]*([^ \n]+)', data)
-  maxmatch = re.search(r'\#[ \t]*maximum:[ \y]*([^ \n]+)', data)
-  minmatch = re.search(r'\#[ \t]*minimum:[ \y]*([^ \n]+)', data)
-
-  try:
-    if DREAL:
-      if minmatch:
-        return float(minmatch.group(1) if minmatch.group(1)!="?" else 'nan')
-      else:
-        return float('nan')
-
+    if args.min:
+        expected_point = test_state.expected[0]
     else:
-      if ansmatch:
-        return float(ansmatch.group(1) if ansmatch.group(1)!="?" else 'nan')
-      elif maxmatch:
-        return float(maxmatch.group(1) if maxmatch.group(1)!="?" else 'nan')
-      else:
-        return float('nan')
+        expected_point = test_state.expected[1]
 
-  except:
-    return float('nan')
+    if expected_point is None:
+        test_state.state = "UNKNOWN"
+        test_state.abs_diff = float("nan")
+        test_state.rel_diff = float("nan")
+        return
 
+    if result[0] == expected_point and result[1] == expected_point:
+        test_state.state = "EXACT"
+        test_state.abs_diff = 0.0
+        test_state.rel_diff = 0.0
+        return
 
-def to_hex(x):
-  n = struct.unpack('<q', struct.pack('<d', x))[0]
-  return -(n + 2**63) if n < 0 else n
+    if strict_bounds and (expected_point < result[0]
+                          or result[1] < expected_point):
+        test_state.state = "BROKEN"
+        test_state.abs_diff = float("nan")
+        test_state.rel_diff = float("nan")
+        return
 
-
-def ulps_between(x, y):
-  if isnan(x) or isnan(y):
-    return float('nan')
-  if copysign(1.0, x) != copysign(1.0, y):
-    return ulps_between(0.0, abs(x)) + ulps_between(0.0, abs(y))
-  return abs(to_hex(x) - to_hex(y))
-
-
-def are_close(expected, result, rel_bound=0.01, abs_bound=1e-6 ):
-  if isinf(expected) and isinf(result):
-    return True
-  abs_diff = abs(expected-result)
-  if expected == 0.0:
-    return abs_diff < abs_bound
-  return abs_diff < abs_bound or abs_diff/abs(expected) < rel_bound
-
-
-def are_rigerous(expected, result):
-  if isinf(expected) and isinf(result):
-    return True
-
-  if DREAL:
-    return expected >= result
-  else:
-    return expected <= result
-
-
-def process_test(cmd, test, expected):
-  all_dirs, basename = path.split(test)
-  unused, last_dir = path.split(all_dirs)
-  testname = path.join(last_dir, basename)
-  cmd = " ".join(cmd)
-
-  try:
-    t0 = time.time()
-    p = subprocess.Popen(cmd, shell=True,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err  = p.communicate()
-    t1 = time.time()
-
-    out = out.decode('utf-8').strip()
-    err = err.decode('utf-8').strip()
-    elapsed = t1 - t0
-
-    low_result, high_result = support.get_result(out+"\n"+err, DREAL)
-    state = compare_result(expected, low_result, high_result, elapsed>=TIMEOUT)
-
-    if DREAL:
-      result = low_result
+    if args.min:
+        result_point = result[0]
+        comp = lambda a, b : a>b
     else:
-      result = high_result
+        result_point = result[1]
+        comp = lambda a, b : a<b
 
-    printstate = STATUS_FMT[state](state)
-    ulps = ulps_between(expected, result)
-    ulps = "unknown" if isnan(ulps) else ulps
-    abs_diff = 0 if isinf(result) and isinf(expected) else abs(result-expected)
-    abs_diff = "unknown" if isnan(abs_diff) else abs_diff
-    expected = 'unknown' if isnan(expected) else expected
-    result = 'no_answer_found' if isnan(result) else result
+    abs_diff, rel_diff = float_diff(expected_point, result_point)
+    test_state.abs_diff = abs_diff
+    test_state.rel_diff = rel_diff
 
-    if elapsed >= TIMEOUT:
-      elapsed = yellow(str(elapsed))
-
-    if state == "FAILED":
-      with open("fail_" + cmd.replace(" ","_").replace("/","-"), "w") as f:
-        f.write(out+"\n\n\n\n"+err)
-
-    if ONLY_BROKEN and state not in {"BROKEN", "FAILED"}:
-      return ".\n", state
-
-    if TSV:
-      str_result = "\t".join((str(i) for i in (testname, state,
-                                               expected, result,
-                                               abs_diff, ulps,
-                                               elapsed))) + "\n"
-
+    if abs(abs_diff) < args.abs_tol or abs(rel_diff) < args.rel_tol:
+        if comp(abs_diff, 0.0):
+            test_state.state = "BAD_CLOSE"
+            return
+        else:
+            test_state.state = "CLOSE"
+            return
     else:
-      result_form = ("{0}\n"+
-                     "Full stdout:\n" +
-                     "  {1}\n"+
-                     ("" if err == "" else "Full stderr:\n  {2}\n") +
-                     "State:     {3}\n" +
-                     "Expected:  {4}\n" +
-                     "Result:    {5}\n" +
-                     "Abs Diff:  {6}\n" +
-                     "ULPs Diff: {7}\n" +
-                     "Time:      {8}\n" +
-                     "\n"+
-                     "\n"+
-                     "\n")
-      str_result = result_form.format(cmd,
-                                      out.replace("\n", "\n  "),
-                                      err.replace("\n", "\n  "),
-                                      printstate,
-                                      expected,
-                                      result,
-                                      abs_diff,
-                                      ulps,
-                                      elapsed)
-
-  except KeyboardInterrupt as kb:
-    raise kb
-
-  except Exception as e:
-    state = "BROKEN"
-    str_result = "ERROR: Unable to run test command '{}'".format(cmd)
-    str_result += "State: {}\n".format(state)
-    str_result += "Full stdout:\n  {}\n\n".format(out.replace("\n", "\n  "))
-    str_result += "Full stderr:\n  {}\n\n".format(err.replace("\n", "\n  "))
-    str_result += "Exception:\n  {}\n\n".format(str(e).replace("\n", "\n  "))
-    str_result += "\n\n\n"
-
-  return str_result, state
+        if comp(abs_diff, 0.0):
+            test_state.state = "BAD_FAR"
+            return
+        else:
+            test_state.state = "FAR"
+            return
 
 
 def tally_result(tup):
-  str_result, state = tup
-  print(str_result, end="", flush=True)
-  STATUS_COUNT[state] += 1
+    args = tup[0]
+    test_state = tup[1]
+    idx = 0 if args.min else 1
+
+    if args.tsv:
+        print("{}\t{}\t{}\t{}\t{}\t{}\t{}".format(test_state.test,
+                                                  test_state.state,
+                                                  test_state.expected[idx],
+                                                  test_state.result[idx],
+                                                  test_state.abs_diff,
+                                                  test_state.rel_diff,
+                                                  test_state.elapsed))
+    elif args.v or test_state.state in {"CRASH", "TIMEOUT", "BROKEN", "FAILED"}:
+        print(("Test:     {}\n"
+               "State:    {}\n"
+               "Expected: {}\n"
+               "Result:   {}\n"
+               "Abs_Diff: {}\n"
+               "Rel_Diff: {}\n"
+               "Time:     {}\n"
+               "\n").format(test_state.test,
+                            STATUS_FMT[test_state.state](test_state.state),
+                            test_state.expected[idx],
+                            test_state.result,
+                            test_state.abs_diff,
+                            test_state.rel_diff,
+                            test_state.elapsed))
+
+    STATUS_COUNT[test_state.state] += 1
 
 
+def process_test(args, cmd, test, strict_bounds, expected):
+    try:
+        t0 = time.time()
+        p = subprocess.Popen(" ".join(cmd), shell=True,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err  = p.communicate()
+        out = out.decode('utf-8')
+        err = err.decode('utf-8')
+        retcode = p.returncode
+        elapsed = time.time() - t0
+
+        result = SUPPORT.get_result(out+"\n"+err)
+
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print("ERROR: Unable to run command")
+        print("\ncommand used:")
+        print(cmd)
+        print("python exception:")
+        print(e)
+        print(exc_type, fname, exc_tb.tb_lineno)
+        try:
+            print("\ncommand output: {}".format(out))
+        except:
+            pass
+        try:
+            print("\ncommand error: {}".format(err))
+        except:
+            pass
+
+        result = "CRASH"
+
+    retval = Object()
+    retval.test = test
+    retval.expected = expected
+    retval.result = result
+    retval.elapsed = elapsed
+    retval.state = None
+
+    if result == "CRASH":
+        retval.state = "CRASH"
+        test_state.abs_diff = float("nan")
+        test_state.rel_diff = float("nan")
+
+    else:
+        calculate_result(args, retval, strict_bounds)
+
+    return args, retval
 
 
-support = None
-def main():
-  global TIMEOUT, support, TSV, DREAL, GELPIA, ONLY_BROKEN
-  t0 = time.time()
+def get_expected(args, test):
+    with open(test, 'r') as f:
+        data = f.read()
+
+    min_match = re.search(r'\#[ \t]*minimum:[ \t]*([^ \n]+)', data)
+    max_match = re.search(r'\#[ \t]*maximum:[ \t]*([^ \n]+)', data)
+
+    if min_match is None or min_match.group(1) == "?":
+        test_min = None
+    else:
+        test_min = float(min_match.group(1))
+
+    if max_match is None or max_match.group(1) == "?":
+        test_max = None
+    else:
+        test_max = float(max_match.group(1))
+
+    return (test_min, test_max)
+
+
+def print_error(e):
+    print("python exception:")
+    print(e)
+
+
+def do_parallel_tests(args, tests, my_pool, prefix, strict_bounds):
+    was_interrupted = False
+    results = list()
+
+    try:
+        for test in tests:
+            expected = get_expected(args, test)
+            if args.skip and expected is None:
+                STATUS_COUNT["SKIPPED"] += 1
+                continue
+            cmd = [args.exe]
+            cmd += [prefix + test]
+            cmd += ["-t {}".format(args.timeout)]
+            cmd += args.flags
+
+            result = my_pool.apply_async(process_test,
+                                      args=(args, cmd, test,
+                                            strict_bounds, expected),
+                                      callback=tally_result,
+                                      error_callback=print_error)
+            results.append(result)
+
+        for result in results:
+            result.wait()
+
+    except KeyboardInterrupt:
+        print("\nCaught KeyboardInterrupt, terminating workers\n")
+        my_pool.terminate()
+        my_pool.join()
+        return True
+
+    my_pool.close()
+    my_pool.join()
+    return False
+
+
+def parse_args():
   num_cpus = multiprocessing.cpu_count() // 2
 
-  # configure the CLI
   parser = argparse.ArgumentParser()
-  parser.add_argument("--flags",
-                      help="Additional command line arguments for the tool under test",
-                      default=[],
-                      nargs="+")
-  parser.add_argument("--threads",
-                      help="Execute regressions using the selected number of threads in parallel",
-                      type=int,
-                      default=num_cpus,
-                      action="store",
-                      dest="n_threads")
   parser.add_argument("--exe",
                       help="What executable to run",
                       type=str,
                       default="gelpia")
+  parser.add_argument("--flags",
+                      help="Additional command line arguments for the tool under test",
+                      default=[],
+                      nargs="+")
+  parser.add_argument("--procs",
+                      help="Execute regressions using the selected number of procs in parallel",
+                      type=int,
+                      default=num_cpus,
+                      action="store")
   parser.add_argument("--timeout",
-                      help="How long each executable has, 0 for no timout",
+                      help="Per test time limit in seconds, 0 for no timout",
                       type=int,
                       default=60)
-  parser.add_argument("--dreal",
+  parser.add_argument("--min",
+                      help="Tool used finds minimum",
                       action='store_const',
                       const=True,
                       default=False)
   parser.add_argument("--tsv",
+                      help="Output in TSV format",
                       action='store_const',
                       const=True,
                       default=False)
@@ -266,168 +313,113 @@ def main():
                       action='store_const',
                       const=True,
                       default=False)
-  parser.add_argument("--broken",
-                      help="Only print tests in the broken category",
+  parser.add_argument("--abs-tol",
+                       help="Absolute tolerance for 'CLOSE' results",
+                       type=float,
+                       default=1e-12)
+  parser.add_argument("--rel-tol",
+                       help="Relative tolerance for 'CLOSE' results",
+                       type=float,
+                       default=0.01)
+  parser.add_argument("-v",
+                      help="Print all test output",
                       action='store_const',
                       const=True,
                       default=False)
   parser.add_argument("benchmark_dir")
+
   args = parser.parse_args()
 
-  TIMEOUT = args.timeout
-  TSV = args.tsv
-  DREAL = args.dreal
-  flags = args.flags
-  ONLY_BROKEN = args.broken
-
-  if args.dreal:
-    flags += ["--dreal"]
-  else:
-    flags += []
-
-  exe = args.exe
-  base = path.basename(args.exe)
-  if base == "gelpia":
-    GELPIA = True
-    exten = ".txt"
-    pref = "@"
-    import gelpia_test_support as support
-  elif base == "dop_gelpia":
-    GELPIA = True
-    exten = ".dop"
-    pref = ""
-    import gelpia_test_support as support
-  elif base == "dOp_wrapper":
-    GELPIA = False
-    DREAL = True
-    exten = ".dop"
-    pref = ""
-    flags = []
-    import dop_test_support as support
-  else:
-    print(yellow("WARNING") + ": assuming gelpia compatable executable")
-    GELPIA = True
-    exten = ".txt"
-    pref = "@"
-    import gelpia_test_support as support
-
-  print("Running benchmarks...")
-
-  results = []
-  tests = sorted(glob.glob(path.join(args.benchmark_dir,"**"),
-                           recursive=True))
-  tests = [f for f in tests if f.endswith(exten)]
-  total = len(tests)
-  print("{} benchmarks to process".format(total))
-
-  if args.n_threads == 1:
-    print("Benchmarks will be proccessed serially\n")
-  else:
-    n_threads = min(total+1, args.n_threads)
-    print("Creating Pool with '{}' Workers\n".format(n_threads), flush=True)
-    p = multiprocessing.pool.ThreadPool(processes=n_threads)
-
-  if TSV:
-    print("File\tStatus\tExpected\tResult\tAbsolute_Difference\tULPs_Difference\tTime")
-    no_color_printing()
-
-  if args.n_threads == 1:
-    KB_INT, elapsed_time = do_serial_tests(tests, exe, pref, args, flags)
-  else:
-    KB_INT, elapsed_time = do_parallel_tests(tests, p, exe, pref, args, flags)
-
-  print(' ELAPSED TIME [{}]'.format(round(elapsed_time, 2)))
-
-  statuses = sorted(STATUS_COUNT.keys())
-  maxlabel = max([len(s) for s in statuses])
-  fmtstr = "{{:{}}}".format(maxlabel)
-  tests_ran = sum(STATUS_COUNT.values())
-  for status in statuses:
-    label = fmtstr.format(status)
-    print("{} : {}".format(STATUS_FMT[status](label), STATUS_COUNT[status]))
-  label = fmtstr.format("TOTAL")
-  print("{} : {}".format(label, tests_ran))
-
-  if KB_INT == False and total != sum(STATUS_COUNT.values()):
-    print(red("\nERROR:")+"number of tests ran({}) does not equal total tests({}), there is a bug in {}".format(tests_ran, total, sys.argv[0]))
+  return args
 
 
-def do_serial_tests(tests, exe, pref, args, flags):
-  KB_INT = False
-  KB_INT_TIME = time.time() - 10
-  t0 = time.time()
-  for test in tests:
-    try:
-      # build up the subprocess command
-      cmd = [exe,
-             pref+test,
-             "-t {}".format(args.timeout)] + flags
-      expected = get_expected(test)
-      if args.skip and isnan(expected):
-        STATUS_COUNT["SKIPPED"] += 1
-        continue
+SUPPORT = None
+def main():
+    global SUPPORT
 
-      tally_result(process_test(cmd[:], test, expected))
+    args = parse_args()
 
-    except KeyboardInterrupt:
-      print("\nCaught KeyboardInterrupt")
-      now = time.time()
-      if now - KB_INT_TIME < 1:
-        print("two KeyboardInterrupts within 1 second, stopping testing\n")
-        KB_INT = True
-        break
-      else:
-        print("going on to next test\n")
-      KB_INT_TIME = now
+    base = path.basename(args.exe)
+    if base == "gelpia":
+        strict_bounds = True
+        file_extension = ".txt"
+        prefix = "@"
+        if args.min:
+            args.flags += ["--dreal"]
+        import gelpia_test_support as SUPPORT
+    elif base == "dop_gelpia":
+        strict_bounds = True
+        file_extension = ".dop"
+        prefix = ""
+        if args.min:
+            args.flags += ["--dreal"]
+        import gelpia_test_support as SUPPORT
+    elif base == "dOp_wrapper":
+        strict_bounds = False
+        file_extension = ".dop"
+        prefix = ""
+        args.min = True
+    else:
+        print(yellow("WARNING") + ": assuming gelpia compatable executable")
+        strict_bounds = True
+        file_extension = ".txt"
+        prefix = "@"
+        if maximize:
+            args.flags += ["--dreal"]
+        import gelpia_test_support as SUPPORT
 
-  if KB_INT == False:
-    print("\nQuitting normally")
+    if args.v:
+        print("Tester Configuration:")
+        print("  exe:            '{}'".format(args.exe))
+        print("  flags:          '{}'".format(" ".join(args.flags)))
+        print("  file_extension: '{}'".format(file_extension))
+        print("  prefix:         '{}'".format(prefix))
+        print("  timeout:        {}".format(args.timeout))
+        print("  goal:           {}".format("minimize" if args.min else "maximize"))
+        print("  abs_tol:        {}".format(args.abs_tol))
+        print("  rel_tol:        {}".format(args.rel_tol))
+        print("  strict_bounds:  {}".format(strict_bounds))
 
-  elapsed_time = time.time() - t0
+    files = glob.glob(path.join(args.benchmark_dir, "**"), recursive=True)
+    files.sort()
+    tests = [f for f in files if f.endswith(file_extension)]
+    total = len(tests)
+    print("{} benchmarks to process".format(total))
 
-  return KB_INT, elapsed_time
+    proc_count = min(total, args.procs)
+    print("Creating Pool with '{}' Workers\n".format(proc_count), flush=True)
+    my_pool = multiprocessing.pool.ThreadPool(processes=proc_count)
 
+    was_interrupted = do_parallel_tests(args, tests, my_pool, prefix, strict_bounds)
 
-def do_parallel_tests(tests, p, exe, pref, args, flags):
-  KB_INT = False
-  results = list()
-  t0 = time.time()
-  try:
-    for test in tests:
-      cmd = [exe,
-             pref+test,
-             "-t {}".format(args.timeout)] + flags
-      expected = get_expected(test)
-      if args.skip and isnan(expected):
-        STATUS_COUNT["SKIPPED"] += 1
-        continue
+    statuses = STATUS_ORDER
+    if args.skip:
+        statuses.remove("UNKNOWN")
+    else:
+        statuses.remove("SKIPPED")
 
-      r = p.apply_async(process_test,
-                        args=(cmd[:], test, expected),
-                        callback=tally_result)
-      results.append(r)
+    if strict_bounds:
+        statuses.remove("BAD_FAR")
+        statuses.remove("BAD_CLOSE")
+    else:
+        statuses.remove("BROKEN")
 
-    # keep the main thread active while there are active workers
-    for r in results:
-      r.wait()
+    maxlabel = max([len(s) for s in statuses])
+    fmtstr = "{{:{}}}".format(maxlabel)
+    tests_ran = sum(STATUS_COUNT.values())
+    for status in statuses:
+        label = fmtstr.format(status)
+        print("{} : {}".format(STATUS_FMT[status](label), STATUS_COUNT[status]))
+    label = fmtstr.format("TOTAL")
+    print("\n{} : {}".format(label, tests_ran))
 
-  except KeyboardInterrupt:
-    print("\nCaught KeyboardInterrupt, terminating workers\n")
-    KB_INT = True
-    p.terminate()
-    p.join()
-  else:
-    print("\nQuitting normally\n")
-    p.close()
-    p.join()
+    if not was_interrupted and tests_ran != total:
+        print(red("\nERROR:") +
+              "number of tests ran({}) does not equal total tests({}), "
+              "there is a bug in {}".format(tests_ran, total, sys.argv[0]))
+        return -1
 
-  elapsed_time = time.time() - t0
+    return 0
 
-  return KB_INT, elapsed_time
-  print(' ELAPSED TIME [{}]'.format(round(elapsed_time, 2)))
-
-
-
-
-if __name__=="__main__":
-  main()
+if __name__ == "__main__":
+    sys.exit(main())

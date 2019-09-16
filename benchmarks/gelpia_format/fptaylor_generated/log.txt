@@ -1,5 +1,10 @@
-# maximum: 6.9
--ie .01
--oe .01
+# minimum: -6.90775527898213705205
+#    type: hand solved + WolframAlpha
+#   input: x=0.001
+
+# maximum: 6.90775527898213705205
+#    type: hand solved + WolframAlpha
+#   input: x=1000.0
+
 -f "log(x)"
--i "{'x' : (.001, 1000)}"
+-i "{'x' : (0.001, 1000.0)}"

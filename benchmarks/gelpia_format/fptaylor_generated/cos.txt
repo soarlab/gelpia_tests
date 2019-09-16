@@ -1,5 +1,10 @@
+# minimum: -1.0
+#    type: hand solved
+#   input: x=pi/20
+
 # maximum: 1.0
--ie .01
--oe .01
+#    type: hand solved
+#   input: x=pi/10
+
 -f "cos(20*x)"
--i "{'x' : (.001, 1.57079632678)}"
+-i "{'x' : (0.001, 1.57079632678)}"
