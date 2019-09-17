@@ -1,5 +1,10 @@
-# maximum: 19.20851 at (+/- 8.05502, +/- 9.66459)
-# minimum: ?
+# minimum: 0.0
+#    type: WolframAlpha
+#   input: x1=0.0 x2=-4.06691
+
+# maximum: 19.20851
+#    type: provisional
+#   input: x1=8.05502 x2=9.66459
 
 var:
 [-10, 10] x1;
