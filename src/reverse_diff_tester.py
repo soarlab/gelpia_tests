@@ -59,6 +59,7 @@ def compare_result(expected, result):
         ("[","("),
         ("]",")"),
         ("powi","pow"),
+        ("(SymbolicConstpi)", "(pi)"),
         ("(ConstantInterval(Float3.141592653589793115997963468544185161590576171875)(Float3.141592653589793560087173318606801331043243408203125))", "(pi)"),
     ]
     expected_string = mass_replace("".join(expected), replacement)
@@ -70,6 +71,8 @@ def compare_result(expected, result):
     if expected_list == result_list:
         return "CORRECT"
     else:
+        print(expected_list)
+        print(result_list)
         return "INCORRECT"
 
 
@@ -160,7 +163,8 @@ def main():
     parser.add_argument("--procs", action="store", dest="n_procs",
                         default=num_cpus, type=int,
                         help="Use the selected number of procs in parallel")
-    parser.add_argument("--rd", type=str, help="Reverse diff pass script")
+    parser.add_argument("--rd", type=str, help="Reverse diff pass script",
+                        required=True)
     parser.add_argument("--skip", action='store_const',
                         const=True, default=False,
                         help="Skip tests with unknown answers")

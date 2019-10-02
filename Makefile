@@ -17,15 +17,18 @@ bin/dOp_wrapper: src/dOp_wrapper.sh
 	chmod +x bin/dOp_wrapper
 
 .PHONY: test
-test: all
-	./bin/tester -v --exe=dop_gelpia benchmarks/dop_format
-	./bin/tester -v --exe=dop_gelpia --min benchmarks/dop_format
-	./bin/tester -v --exe=gelpia benchmarks/gelpia_format
-	./bin/tester -v --exe=gelpia --min benchmarks/gelpia_format
+test: test-max test-min
 
-.PHONY: test-dreal
-test-dreal: all
-	./bin/tester --exe=dOp_wrapper --dreal benchmarks/dop_format/dreal_benchmarks
+.PHONY: test-max
+test-max: all
+	./bin/tester ${TESTER_ARGS} --exe=dop_gelpia benchmarks/dop_format
+	./bin/tester ${TESTER_ARGS} --exe=gelpia benchmarks/gelpia_format
+
+.PHONY: test-min
+test-min: all
+	./bin/tester ${TESTER_ARGS} --exe=dop_gelpia --min benchmarks/dop_format
+	./bin/tester ${TESTER_ARGS} --exe=gelpia --min benchmarks/gelpia_format
+
 
 .PHONY: clean
 clean:
