@@ -1,5 +1,11 @@
-# maximum: 308.1290960116068 at (-5, 0) provisional
-# minimum: 0.3978873577297383394222094084 at (-pi, 12.275), (pi, 2.275), (9.42478, 2.475)
+# minimum: 0.3978873577297383
+#    type: provisional
+#   input: x1=-3.141592653589793 x2=12.275
+
+# maximum: 308.12909601160663
+#    type: provisional
+#   input: x1=-5.0 x2=0.0
+
 
 var:
 [-5, 10] x1;

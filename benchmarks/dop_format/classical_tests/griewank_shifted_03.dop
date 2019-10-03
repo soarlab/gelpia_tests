@@ -1,5 +1,11 @@
-# maximum: 1 at (1.1,1.1,1.1)
-# minimum: -270.961170463883 provisional
+# minimum: -270.9611704638833
+#    type: provisional
+#   input: x1=-600.0 x2=-600.0 x3=-600.0
+
+# maximum: 1.0
+#    type: provisional
+#   input: x1=1.1 x2=1.1 x3=1.1
+
 
 var:
 [-600, 600] x1;

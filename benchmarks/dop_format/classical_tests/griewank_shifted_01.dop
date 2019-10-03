@@ -1,8 +1,15 @@
-# maximum: 92.05863649524466 as (-599.2490724615601) provisional
-# minimum: 0 at (1.1)
+# minimum: -91.05863649524456
+#    type: provisional
+#   input: x1=-599.2490724571068
+
+# maximum: 1.0
+#    type: provisional
+#   input: x1=1.1
+
 
 var:
 [-600, 600] x1;
 
 cost:
-(x1 - 1.1)^2 / 4000 - cos((x1 - 1.1) / sqrt(1)) + 1;
+-((x1 - 1.1)^2 / 4000);
+cos((x1 - 1.1) / sqrt(1));
