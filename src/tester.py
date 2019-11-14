@@ -416,9 +416,7 @@ def main():
     fmtstr = "{{:{}}}".format(maxlabel)
     tests_ran = sum(STATUS_COUNT.values())
     print()
-    retval = 0
     for status in statuses:
-        retval += status in {"CRASH", "BROKEN", "FAILED", "BAD_FAR", "BAD_CLOSE",}
         label = fmtstr.format(status)
         print("{} : {}".format(STATUS_FMT[status](label), STATUS_COUNT[status]))
     label = fmtstr.format("TOTAL")
@@ -429,6 +427,10 @@ def main():
               "number of tests ran({}) does not equal total tests({}), "
               "there is a bug in {}".format(tests_ran, total, sys.argv[0]))
         return -1
+
+    retval = 0
+    for status in {"CRASH", "BROKEN", "FAILED", "BAD_FAR", "BAD_CLOSE",}:
+        retval += STATUS_COUNT[status]
 
     return retval
 
