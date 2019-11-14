@@ -416,7 +416,9 @@ def main():
     fmtstr = "{{:{}}}".format(maxlabel)
     tests_ran = sum(STATUS_COUNT.values())
     print()
+    retval = 0
     for status in statuses:
+        retval += status in {"CRASH", "BROKEN", "FAILED", "BAD_FAR", "BAD_CLOSE",}
         label = fmtstr.format(status)
         print("{} : {}".format(STATUS_FMT[status](label), STATUS_COUNT[status]))
     label = fmtstr.format("TOTAL")
@@ -428,7 +430,7 @@ def main():
               "there is a bug in {}".format(tests_ran, total, sys.argv[0]))
         return -1
 
-    return 0
+    return retval
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -21,13 +21,13 @@ test: test-max test-min
 
 .PHONY: test-max
 test-max: all
-	./bin/tester ${TESTER_ARGS} --exe=dop_gelpia benchmarks/dop_format
-	./bin/tester ${TESTER_ARGS} --exe=gelpia benchmarks/gelpia_format
+	./bin/tester ${TESTER_ARGS} --exe=../bin/dop_gelpia benchmarks/dop_format
+	./bin/tester ${TESTER_ARGS} --exe=../bin/gelpia benchmarks/gelpia_format
 
 .PHONY: test-min
 test-min: all
-	./bin/tester ${TESTER_ARGS} --exe=dop_gelpia --min benchmarks/dop_format
-	./bin/tester ${TESTER_ARGS} --exe=gelpia --min benchmarks/gelpia_format
+	./bin/tester ${TESTER_ARGS} --exe=../bin/dop_gelpia --min benchmarks/dop_format
+	./bin/tester ${TESTER_ARGS} --exe=../bin/gelpia --min benchmarks/gelpia_format
 
 
 .PHONY: clean
