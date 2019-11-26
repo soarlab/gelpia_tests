@@ -6,22 +6,21 @@ import re
 
 
 def get_result(output):
-    try:
-        match = re.search(r"Maximum is in \[([^,]*), ([^\]]*)\]", output)
-        l = float(match.group(1))
-        h = float(match.group(2))
-        return l, h
-    except:
-        pass
+    max_l_match = re.search(r"Maximum lower bound (.*)", output)
 
-    try:
-        match = re.search(r"Minimum is in \[([^,]*), ([^\]]*)\]", output)
-        l = float(match.group(1))
-        h = float(match.group(2))
-        return l, h
-    except:
-        pass
+    if max_l_match is not None:
+        max_u_match = re.search(r"Maximum upper bound (.*)", output)
+        l = max_l_match.group(1)
+        u = max_u_match.group(1)
+        return float(l), float(u)
 
-    print("BAD: {}".format(output))
+    min_l_match = re.search(r"Minimum lower bound (.*)", output)
+    if min_l_match is not None:
+        min_u_match = re.search(r"Minimum upper bound (.*)", output)
+        l = min_l_match.group(1)
+        u = min_u_match.group(1)
+        return float(l), float(u)
+
+    print("Unable to parse: {}".format(output))
     return None, None
 
