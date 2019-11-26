@@ -25,8 +25,7 @@ STATUS_ORDER = ["CRASH", "BROKEN", "FAILED",
                 "TIMEOUT",
                 "FAR", "CLOSE",
                 "EXACT",
-                "SKIPPED", "UNKNOWN",
-                "TIMEOUT"]
+                "SKIPPED", "UNKNOWN",]
 STATUS_FMT = {
   # Tool crashed
   "CRASH"     : lambda t : red(bold(t)),
@@ -347,10 +346,10 @@ def main():
     base = path.basename(args.exe)
     if base == "gelpia":
         strict_bounds = True
-        file_extension = ".txt"
-        prefix = "@"
+        file_extension = ".dop"
+        prefix = ""
         if args.min:
-            args.flags += ["--dreal"]
+            args.flags += ["--mode=min"]
         import gelpia_test_support as SUPPORT
     elif base == "dop_gelpia":
         strict_bounds = True

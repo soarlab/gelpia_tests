@@ -1,0 +1,15 @@
+# minimum: -1210
+#    type: hand solved
+#   input: x=-10.0 y=-10.0
+
+# maximum: 990
+#    type: hand solved
+#   input: x=-10.0 y=10.0
+
+var:
+x = [-10.0, 10.0];
+y = [-10.0, 10.0];
+
+cost:
+x * (1-x) * (1-y)
+

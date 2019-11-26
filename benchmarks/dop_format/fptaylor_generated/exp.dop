@@ -1,0 +1,14 @@
+# minimum: 5.0759588975494567652918094795743369193055992828928E-435
+#    type:  hand solved + python decimal
+#   input: x=-1000.0
+
+# maximum: 22026.465794806716516957900645284244366353512618557
+#    type:  hand solved + python decimal
+#   input: x=10.0
+
+var:
+x = [-1000.0, 10.0];
+
+cost:
+exp(x)
+

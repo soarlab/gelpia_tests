@@ -1,0 +1,15 @@
+# minimum: -1.0
+#    type: hand solved
+#   input: x=0.0 y=-1.0
+
+# maximum: 0.81818181818181818181818181818
+#    type: hand solved + python decimal
+#   input: x=1.0 y=-0.1
+
+var:
+x = [0.0, 1.0];
+y = [-1.0, -0.1];
+
+cost:
+(x + y) / (x - y)
+

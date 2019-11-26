@@ -1,0 +1,19 @@
+# minimum: 0.0001486719514734
+#    type: provisional
+#   input: dev=1.0  x=-5.0
+
+# maximum: 0.1121882461513191
+#    type: provisional
+#   input: dev=1.4 x=-4.0
+
+var:
+dev = [1.0, 1.4];
+x = [-5.0, -4.0];
+__const_0 = [0.0, 0.0];
+__const_3 = [2.50662827463, 2.50662827463];
+__const_4 = [1.0, 1.0];
+__const_5 = [2.0, 2.0];
+__const_6 = [-1.0, -1.0];
+
+cost:
+abs((abs(((__const_4 * (1.0 / (dev * __const_3))) * (exp((__const_6 * (((x - __const_0) * (x - __const_0)) * (1.0 / (__const_5 * (dev * dev)))))) * (__const_6 * (((x - __const_0) * (x - __const_0)) * (-1.0 * ((__const_5 * (dev * 4.0)) / ((__const_5 * (dev * dev)) * (__const_5 * (dev * dev)))))))))) + abs(((__const_4 * (1.0 / (dev * __const_3))) * (exp((__const_6 * (((x - __const_0) * (x - __const_0)) * (1.0 / (__const_5 * (dev * dev)))))) * (__const_6 * (((x - __const_0) * (x - __const_0)) * (-1.0 * ((__const_5 * (dev * 4.0)) / ((__const_5 * (dev * dev)) * (__const_5 * (dev * dev))))))))))))

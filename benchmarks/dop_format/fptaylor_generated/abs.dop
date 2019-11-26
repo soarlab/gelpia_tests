@@ -1,0 +1,14 @@
+# minimum: 1.01e-2
+#    type: hand solved
+#   input: x=1.01e-2
+
+# maximum: 2.0
+#    type: hand solved
+#   input: x=2.0
+
+var:
+x = [1.01e-2, 2.0];
+
+cost:
+abs(x)
+

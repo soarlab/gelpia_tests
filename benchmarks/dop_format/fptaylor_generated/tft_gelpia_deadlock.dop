@@ -1,0 +1,13 @@
+# minimum: 256.0
+#    type: hand solved
+#   input: N/A
+
+# maximum: 256.0
+#    type: hand solved
+#   input: N/A
+
+var:
+
+cost:
+abs((abs((64.0 + 64.0)) + abs((64.0 + 64.0))))
+

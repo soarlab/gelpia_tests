@@ -1,0 +1,13 @@
+# minimum: 2.0
+#    type: hand solved
+#   input: N/A
+
+# maximum: 2.0
+#    type: hand solved
+#   input: N/A
+
+var:
+
+cost:
+abs(abs((1.0 + 1.0)))
+

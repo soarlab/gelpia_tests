@@ -1,0 +1,14 @@
+# minimum: 0.0
+#    type: hand solved
+#   input: x=0.0
+
+# maximum: 31.622776601683793319988935
+#    type: hand solved + WolframAlpha
+#   input: x=0.5 y=0.25
+
+var:
+x = [0, 1000];
+
+cost:
+sqrt(x)
+

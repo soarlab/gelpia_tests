@@ -1,19 +1,27 @@
 
 
+import re
+
+
+
+
 def get_result(output):
-    output = "".join([line for line in output.splitlines()
-                      if not line.startswith("Parsing")
-                      and not line.startswith("Solver")])
-    retoutput = output.replace("Stopping early...","")
+    try:
+        match = re.search(r"Maximum is in \[([^,]*), ([^\]]*)\]", output)
+        l = float(match.group(1))
+        h = float(match.group(2))
+        return l, h
+    except:
+        pass
 
     try:
-        lst = eval(retoutput, {'inf' : float('inf')})
+        match = re.search(r"Minimum is in \[([^,]*), ([^\]]*)\]", output)
+        l = float(match.group(1))
+        h = float(match.group(2))
+        return l, h
     except:
-        return None, None
+        pass
 
-    l, h = float(lst[0][0]), float(lst[0][1])
-    if l > h:
-        print(" |   |   |   |               |   |   |   |")
-        print(" |   |   |   |               |   |   |   |")
-        print(" V   V   V   V  UPSIDE DOWN  V   V   V   V")
-    return l, h
+    print("BAD: {}".format(output))
+    return None, None
+
