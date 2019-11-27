@@ -1,0 +1,14 @@
+# minimum: -6.90775527898213705205
+#    type: hand solved + WolframAlpha
+#   input: x=0.001
+
+# maximum: 6.90775527898213705205
+#    type: hand solved + WolframAlpha
+#   input: x=1000.0
+
+var:
+x = [0.001, 1000.0];
+
+cost:
+log(x)
+

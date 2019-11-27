@@ -1,0 +1,16 @@
+# minimum: 3.0
+#    type: hand solved
+#   input: x=1.0 y=1.0 z=1.0
+
+# maximum: 6.0
+#    type: hand solved
+#   input: x=2.0 y=2.0 z=2.0
+
+var:
+x = [1.0, 2.0];
+y = [1.0, 2.0];
+z = [1.0, 2.0];
+
+cost:
+(((x + y) - z) + ((y + z) - x)) + ((z + x) - y)
+

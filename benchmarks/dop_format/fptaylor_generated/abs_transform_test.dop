@@ -1,0 +1,16 @@
+# minimum: -inf
+#    type: hand solved
+#   input: x= approaches pi/2 i=any j=any
+
+# maximum: inf
+#    type: hand solved
+#   input: x= approaches pi/2 i=any j=any
+
+var:
+x = [1.01e-2, 2e0];
+i = [3.0, 4.0];
+j = [0.5, 1.0];
+
+cost:
+tan(abs(x)) + sqrt(abs(2.0) + abs(tan(cos(i + abs(j)))))
+

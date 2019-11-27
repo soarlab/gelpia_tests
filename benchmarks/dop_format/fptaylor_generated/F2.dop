@@ -1,0 +1,14 @@
+# minimum: 0
+#    type: hand solved
+#   input: x=0 and x=1
+
+# maximum: 0.25
+#    type: hand solved
+#   input: x=0.25
+
+var:
+x = [0, 1];
+
+cost:
+x*(1-x)
+

@@ -1,0 +1,13 @@
+# minimum: 3.15904629388796989828e-06
+#    type: hand solved
+#   input: N/A
+
+# maximum: 3.15904629388796989828e-06
+#    type: hand solved
+#   input: N/A
+
+var:
+
+cost:
+abs([3.15904629388796989828e-06, 3.15904629388796989828e-06])
+

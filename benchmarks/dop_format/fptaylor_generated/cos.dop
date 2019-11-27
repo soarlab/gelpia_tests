@@ -1,0 +1,14 @@
+# minimum: -1.0
+#    type: hand solved
+#   input: x=pi/20
+
+# maximum: 1.0
+#    type: hand solved
+#   input: x=pi/10
+
+var:
+x = [0.001, 1.57079632678];
+
+cost:
+cos(20*x)
+
