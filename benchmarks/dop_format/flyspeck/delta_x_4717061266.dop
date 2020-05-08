@@ -1,4 +1,7 @@
-# maximum: 699.3377075352961 provisional
+# maximum: 512.192530096128
+#    type: provisional
+#   input: x1=6.3504, x2=6.3504, x3=6.3504, x4=6.3504, x5=6.3504, x6=6.3504
+
 # minimum: 128
 
 var:
