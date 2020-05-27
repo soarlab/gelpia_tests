@@ -1,5 +1,10 @@
-# maximum: 6.02074 at (0.757249) found via wolfram alpha and rounded down
-# minimum: -15.829732 at (1) found via graph, python decimal and rounded up
+# minimum: -15.8297319459741
+#    type: provisional
+#   input: x=1.0
+
+# maximum: 6.02074005576708
+#    type: provisional
+#   input: x=0.757248758105561
 
 var:
 [0, 1] x;

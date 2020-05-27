@@ -1,5 +1,12 @@
-# maximum: 959.640663 at (512, 404.2319)
-# minimum: -1049.131623 provisional
+# minimum: -1049.13162350449
+#    type: provisional
+#   input: x1=-512.0
+#          x2=512.0
+
+# maximum: 959.640662720851
+#    type: provisional
+#   input: x1=512.0
+#          x2=404.231805035786
 
 var:
 [-512, 512] x1;

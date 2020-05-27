@@ -1,5 +1,12 @@
-# maximum: 0.9985506327829649 provisonal
-# minimum: 0 at (0, 0)
+# minimum: 0.0
+#    type: provisional
+#   input: x1=0.0
+#          x2=0.0
+
+# maximum: 0.998433145473543
+#    type: provisional
+#   input: x1=1.25311470031712
+#          x2=-3.27276588725152e-8
 
 var:
 [-100, 100] x1;

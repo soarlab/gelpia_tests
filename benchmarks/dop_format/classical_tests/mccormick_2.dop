@@ -1,5 +1,12 @@
-# maximum: 44.0985 at (-1.5, 4) found via wolfram mathematica
-# minimum: -1.913223 at (-0.547198, -1.5472) found via wolfram mathematica
+# minimum: -1.91322295496532
+#    type: provisional
+#   input: x1=-0.547198977108934
+#          x2=-1.54720115670039
+
+# maximum: 44.09847214410395
+#    type: provisional
+#   input: x1=-1.5
+#          x2=4.0
 
 var:
 [-1.5, 4] x1;

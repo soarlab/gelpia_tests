@@ -1,5 +1,14 @@
-# maximum: 88.3346
-# minimum: 1
+# minimum: 1.000398084119883411
+#    type: provisional
+#   input: theta=0.0
+#          gamma=-0.785
+#          gr=0.0
+
+# maximum: 88.3321651425614
+#    type: provisional
+#   input: theta=0.615784186339585
+#          gamma=0.00656807955202416
+#          gr=49.9993348913959
 
 var:
 [0,1.57] theta;

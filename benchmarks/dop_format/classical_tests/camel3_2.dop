@@ -1,5 +1,12 @@
-# maximum: 0 at (0,0)
-# minimum: -2047.9166666819463 provisional
+# minimum: -2047.9166666666667
+#    type: provisional
+#   input: x1=5.0
+#          x2=5.0
+
+# maximum: 0.0
+#    type: provisional
+#   input: x1=0.0
+#          x2=0.0
 
 var:
 [-5, 5] x1;
