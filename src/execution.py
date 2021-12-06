@@ -32,9 +32,9 @@ class Execution():
             self.has_run = True
 
             if self.retcode != 0:
-                pritn(self.command)
-                print(stdout)
-                print(stderr)
+                print(self.command)
+                print(self.stdout)
+                print(self.stderr)
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
